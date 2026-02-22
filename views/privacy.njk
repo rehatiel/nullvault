@@ -1,0 +1,51 @@
+{% extends "base.njk" %}
+{% set mainClass = "info-main" %}
+
+{% block title %}Privacy Policy — {{ siteName }}{% endblock %}
+
+{% block content %}
+<div class="info-page">
+  <div class="info-page-header">
+    <h1>Privacy Policy</h1>
+    <p class="info-page-meta">Last updated: January 2025</p>
+  </div>
+
+  <div class="info-section">
+    <h3>Overview</h3>
+    <p>{{ siteName }} is a self-hosted, open-source application. This privacy policy describes what data is collected when someone uses a {{ siteName }} link, how that data is used, and how long it is retained. Because {{ siteName }} is self-hosted, this policy applies to the specific instance you are accessing. The operator of this instance is responsible for how data is handled on their infrastructure.</p>
+
+    <h3>What we collect when a link is accessed</h3>
+    <p>When a visitor accesses a public {{ siteName }} link, the following information is automatically logged:</p>
+    <ul class="info-list">
+      <li><strong>IP address</strong> — the network address of the request</li>
+      <li><strong>Timestamp</strong> — the date and time of the access</li>
+      <li><strong>User-Agent string</strong> — the browser and operating system reported by the visitor's device</li>
+      <li><strong>HTTP Referrer</strong> — the URL of the page that linked to the secret, if any</li>
+      <li><strong>Approximate geolocation</strong> — country and region derived from the IP address using an offline database. City-level precision is provided where available; no exact coordinates are collected.</li>
+      <li><strong>Standard HTTP headers</strong> — including Accept-Language, Sec-CH-UA, and Sec-Fetch-Site, as sent by the browser</li>
+    </ul>
+    <p>This information is logged solely for the benefit of the link creator and is accessible only through the private Control Link associated with each secret.</p>
+
+    <h3>What we do not collect</h3>
+    <p>{{ siteName }} does not use cookies, tracking pixels, browser fingerprinting scripts, or any form of cross-session tracking. No information is collected from visitors beyond what is listed above. The application makes no outbound requests to third-party analytics or advertising services.</p>
+
+    <h3>Secret content</h3>
+    <p>The content of a secret is stored in an obfuscated form and is never logged. When a secret is revealed, the content is displayed once and, if "Burn after reading" was selected, immediately and permanently deleted from the server. The server operator does not have the ability to retrieve secret content after it has been burned.</p>
+
+    <h3>How collected data is used</h3>
+    <p>Access log data is used exclusively to generate the access report visible to the link creator in the Control Link dashboard. It is not used for advertising, profiling, or any purpose beyond providing the creator with visibility into who accessed their link.</p>
+
+    <h3>Data sharing</h3>
+    <p>{{ siteName }} does not sell, rent, or share visitor data with third parties. No data is transmitted to external services at runtime. If a webhook is configured by the link creator, access event details (including IP address, approximate location, and User-Agent) are sent to the webhook endpoint specified by the creator — this is at the discretion of the creator, not {{ siteName }}.</p>
+
+    <h3>Data retention</h3>
+    <p>Access logs are automatically deleted after 30 days by default. The server operator may configure a shorter or longer retention period. Logs for a given secret are also deleted when the secret is burned or expires. Secret content that has been burned or has expired is deleted permanently and cannot be recovered.</p>
+
+    <h3>Your rights</h3>
+    <p>If you are a visitor who accessed a {{ siteName }} link and have questions about the data logged from your visit, please contact the operator of the specific {{ siteName }} instance you used. Because {{ siteName }} is self-hosted, Anthropic and the {{ siteName }} open-source project have no access to data stored on third-party deployments.</p>
+
+    <h3>Changes to this policy</h3>
+    <p>The operator of this instance may update this policy at any time. Continued use of the service constitutes acceptance of the current policy.</p>
+  </div>
+</div>
+{% endblock %}

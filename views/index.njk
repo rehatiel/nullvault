@@ -49,8 +49,11 @@
       <label for="templateInput">Template</label>
       <select id="templateInput">
         <option value="default">Default</option>
-        <option value="banking">Banking</option>
-        <option value="crypto">Crypto</option>
+        <option value="banking">Banking portal</option>
+        <option value="crypto">Crypto wallet</option>
+        <option value="invoice">Invoice / PDF gate</option>
+        <option value="corporate">Corporate document</option>
+        <option value="docs">Shared document viewer</option>
       </select>
     </div>
   </div>
@@ -62,7 +65,6 @@
       <span>Burn after reading — destroy after first reveal</span>
     </label>
   </div>
-
 
   <button id="createBtn" class="btn btn-primary">🔒 &nbsp;Generate Secure Link</button>
 
@@ -87,6 +89,11 @@
     <div class="result-label result-label-accent">Control Link (keep private)</div>
     <div class="result-url" id="resultControl"></div>
     <button class="copy-btn-flat" id="copyControl">Copy</button>
+  </div>
+
+  <div class="result-qr-wrap">
+    <div class="result-qr-label">QR Code — scan to share in person</div>
+    <img class="result-qr" id="resultQR" src="" alt="QR code for the public link" />
   </div>
 
   <div class="warn-box warn-box-gap">

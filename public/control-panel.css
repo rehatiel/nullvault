@@ -587,3 +587,431 @@ body.cp-body {
 .cp-heat-2 { background: #d29922; }
 .cp-heat-3 { background: #e8622a; }
 .cp-heat-4 { background: #f85149; }
+
+/* ══════════════════════════════════════════════════════════════
+   ADDITIONS — Analysis features, IP masking, new templates
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── IP mask toolbar ── */
+.cp-ip-mask-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.5rem;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.75rem;
+  flex-wrap: wrap;
+}
+.cp-ip-mask-label { color: var(--text-dim); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.cp-ip-mask-btn {
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 0.73rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.cp-ip-mask-btn:hover { border-color: var(--accent); color: var(--accent); }
+.cp-ip-mask-btn-active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.cp-ip-mask-note { color: var(--text-dim); font-size: 0.7rem; margin-left: 0.25rem; }
+
+/* ── Event classification label pills ── */
+.cp-evtlabel {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+.cp-evtlabel-first-visit           { background: var(--green-dim);  color: var(--green); }
+.cp-evtlabel-repeat-visit-same-ip  { background: var(--yellow-dim); color: var(--yellow); }
+.cp-evtlabel-repeat-visit-new-ip   { background: var(--yellow-dim); color: var(--yellow); }
+.cp-evtlabel-rapid-revisit         { background: rgba(230,110,40,0.18); color: #e67728; }
+.cp-evtlabel-expired-link-access   { background: var(--red-dim);    color: var(--red); }
+.cp-evtlabel-burned-link-access    { background: var(--red-dim);    color: var(--red); }
+.cp-evtlabel-non-browser-user-agent{ background: var(--purple-dim); color: var(--purple); }
+
+/* ── Network type chips (IP tab) ── */
+.cp-nettype {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.cp-nettype-residential---isp       { background: var(--green-dim);  color: var(--green); }
+.cp-nettype-mobile-carrier           { background: var(--accent-dim); color: var(--accent); }
+.cp-nettype-hosting---data-center    { background: var(--yellow-dim); color: var(--yellow); }
+.cp-nettype-unknown                  { background: var(--surface2);   color: var(--text-dim); }
+
+/* ── Analysis tab ── */
+.cp-analysis-disclaimer {
+  display: flex;
+  gap: 0.85rem;
+  background: rgba(210,153,34,0.08);
+  border: 1px solid rgba(210,153,34,0.3);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1.5rem;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+.cp-analysis-disclaimer-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+
+.cp-analysis-empty {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  padding: 1rem 0;
+}
+
+/* Correlation hint cards */
+.cp-hints-list { display: flex; flex-direction: column; gap: 0.65rem; margin-bottom: 0.5rem; }
+.cp-hint-card {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  align-items: flex-start;
+}
+.cp-hint-info    { background: var(--accent-dim);  border-color: rgba(56,139,253,0.3);  color: var(--text); }
+.cp-hint-notice  { background: var(--yellow-dim);  border-color: rgba(210,153,34,0.35); color: var(--text); }
+.cp-hint-warning { background: var(--red-dim);     border-color: rgba(248,81,73,0.35);  color: var(--text); }
+.cp-hint-severity {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+  align-self: flex-start;
+}
+.cp-hint-info .cp-hint-severity    { background: var(--accent-dim); color: var(--accent); }
+.cp-hint-notice .cp-hint-severity  { background: var(--yellow-dim); color: var(--yellow); }
+.cp-hint-warning .cp-hint-severity { background: var(--red-dim);    color: var(--red); }
+
+/* Label legend */
+.cp-label-legend { display: flex; flex-direction: column; gap: 0.55rem; }
+.cp-label-legend-row { display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; }
+.cp-label-legend-desc { color: var(--text-dim); }
+
+/* Narrative box */
+.cp-narrative-wrap { position: relative; }
+.cp-narrative {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  font-family: var(--font-sans);
+  font-size: 0.83rem;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 0.6rem;
+}
+.cp-narrative-copy-btn { margin-top: 0; }
+
+/* Hint warning variant */
+.cp-hint-warn {
+  background: rgba(210,153,34,0.07);
+  border: 1px solid rgba(210,153,34,0.25);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  color: #c9a227;
+  font-size: 0.78rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Burned button state ── */
+.cp-settings-btn-burned {
+  opacity: 0.5;
+  cursor: not-allowed;
+  border-color: var(--red) !important;
+  color: var(--red) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Features: OSINT links, Client Hints, Sec-Fetch, language,
+             timezone, note input, print view
+   ══════════════════════════════════════════════════════════════ */
+
+/* ── OSINT lookup link row ── */
+.cp-osint-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.65rem;
+  margin-top: 0.65rem;
+  border-top: 1px solid var(--border);
+}
+.cp-osint-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-dim);
+  margin-right: 0.2rem;
+}
+.cp-osint-link {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.18rem 0.55rem;
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  color: var(--accent);
+  text-decoration: none;
+  transition: background 0.12s, border-color 0.12s;
+}
+.cp-osint-link:hover { background: var(--accent-dim); border-color: var(--accent); }
+
+/* ── Language pill in timeline/IP tab ── */
+.cp-tl-lang {
+  font-size: 0.72rem;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 4px;
+  padding: 0.08rem 0.4rem;
+  color: var(--text-dim);
+}
+.cp-ip-lang {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text);
+  word-break: break-all;
+}
+
+/* ── Timezone display ── */
+.cp-tl-tz, .cp-tz {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+}
+
+/* ── Client Hints row in IP card ── */
+.cp-ip-ch {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  word-break: break-word;
+}
+/* CH badge in UA list */
+.cp-ua-row-ch { border-left: 2px solid var(--accent); }
+.cp-ua-ch-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border-radius: 3px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* ── Sec-Fetch-Site badges ── */
+.cp-tl-fetch, .cp-fetch-badge {
+  font-size: 0.67rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+/* none = typed/pasted directly — most interesting signal */
+.cp-tl-fetch.cp-fetch-none,    .cp-fetch-badge.cp-fetch-none    { background: rgba(248,81,73,0.15);  color: #f85149; }
+/* cross-site = came from another domain (link in email, telegram, etc.) */
+.cp-tl-fetch.cp-fetch-cross-site, .cp-fetch-badge.cp-fetch-cross-site { background: rgba(210,153,34,0.15); color: #d29922; }
+/* same-site / same-origin = navigated within the app */
+.cp-tl-fetch.cp-fetch-same-site,   .cp-fetch-badge.cp-fetch-same-site   { background: var(--surface2); color: var(--text-dim); }
+.cp-tl-fetch.cp-fetch-same-origin, .cp-fetch-badge.cp-fetch-same-origin { background: var(--surface2); color: var(--text-dim); }
+
+/* ── Note / label meta pill in header bar ── */
+.cp-meta-note {
+  color: #c9d1d9;
+  font-style: italic;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Print button in header ── */
+.cp-print-btn {
+  padding: 0.3rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  margin-right: 0.75rem;
+}
+.cp-print-btn:hover { background: var(--surface2); border-color: var(--accent); color: var(--accent); }
+
+/* ── @media print — clean report layout ── */
+@media print {
+  /* Hide everything interactive */
+  .no-print,
+  .cp-print-btn,
+  .cp-copy-btn,
+  .cp-tabs,
+  .cp-ip-mask-bar,
+  .cp-settings-btn,
+  .cp-settings-form,
+  #tab-settings,
+  #tab-devices,
+  #tab-analysis { display: none !important; }
+
+  /* Show all panels (not just the active tab) */
+  .cp-panel { display: block !important; page-break-inside: avoid; }
+
+  /* Clean white page */
+  body, .cp-body { background: #fff !important; color: #000 !important; }
+  .cp-header     { background: #fff !important; border-bottom: 1px solid #ccc !important; }
+  .cp-header-left a, .cp-title { color: #000 !important; }
+  .cp-meta-bar   { background: #f5f5f5 !important; border-bottom: 1px solid #ccc !important; color: #333 !important; }
+  .cp-stats      { border-bottom: 1px solid #ccc !important; background: #fff !important; }
+  .cp-stat       { background: #fff !important; color: #000 !important; border-color: #ccc !important; }
+  .cp-stat-value { color: #000 !important; }
+  .cp-stat-label { color: #555 !important; }
+  .cp-content    { padding: 1rem !important; background: #fff !important; }
+  .cp-section-title { color: #000 !important; border-bottom-color: #ccc !important; }
+  .cp-tl-body, .cp-tl-event, .cp-tl-time, .cp-tl-meta { color: #333 !important; }
+  .cp-tl-dot  { border-color: #ccc !important; }
+  .cp-dot-reveal  { background: #dc2626 !important; }
+  .cp-dot-attempt { background: #d97706 !important; }
+  .cp-dot-view    { background: #2563eb !important; }
+  .cp-ip-card { background: #f9f9f9 !important; border-color: #ccc !important; }
+  .cp-ip-addr, .cp-ip-label, .cp-ip-details { color: #000 !important; }
+  .cp-table     { color: #000 !important; }
+  .cp-table th  { background: #eee !important; color: #000 !important; }
+  .cp-table td  { color: #333 !important; border-color: #ddd !important; }
+  .cp-table tr  { border-color: #ddd !important; }
+  .cp-osint-links { display: none !important; } /* links don't work on paper */
+
+  /* Section headings */
+  #tab-overview::before  { content: "── Overview ──";  display: block; font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+  #tab-timeline::before  { content: "── Timeline ──";  display: block; font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+  #tab-ips::before       { content: "── IP Addresses ──"; display: block; font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+  #tab-logs::before      { content: "── Raw Logs ──";  display: block; font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   LIVE POLLING UI
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Live badge */
+.cp-live-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 99px;
+  margin-right: 0.5rem;
+}
+.cp-live-badge-on {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  animation: cp-live-pulse 2s ease-in-out infinite;
+}
+.cp-live-badge-paused {
+  background: rgba(100, 116, 139, 0.15);
+  color: #64748b;
+}
+@keyframes cp-live-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* Stat card flash on new data */
+@keyframes cp-stat-flash {
+  0%   { border-color: #10b981; box-shadow: 0 0 0 0 rgba(16,185,129,0.5); }
+  50%  { border-color: #10b981; box-shadow: 0 0 0 8px rgba(16,185,129,0);  }
+  100% { border-color: inherit; box-shadow: none; }
+}
+.cp-stat-flash { animation: cp-stat-flash 1s ease-out; }
+
+/* New timeline row flash */
+@keyframes cp-row-slide {
+  from { opacity: 0; transform: translateY(-8px); background: rgba(59,130,246,0.12); }
+  to   { opacity: 1; transform: translateY(0);    background: transparent; }
+}
+.cp-tl-row-new { animation: cp-row-slide 0.5s ease-out forwards; }
+
+/* ── Toast notifications ──────────────────────────────────────────────────── */
+.cp-toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.6rem;
+  max-width: 360px;
+}
+.cp-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  border: 1px solid transparent;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  opacity: 0;
+  transform: translateX(20px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+.cp-toast-show {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+.cp-toast-hide {
+  opacity: 0;
+  transform: translateX(20px);
+}
+.cp-toast-info    { background: #1a2236; border-color: #1e2d45; color: #94a3b8; }
+.cp-toast-warn    { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.35); color: #fbbf24; }
+.cp-toast-danger  { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.45); color: #fca5a5; }
+.cp-toast-icon    { font-size: 1rem; flex-shrink: 0; margin-top: 0.05rem; }
+.cp-toast-msg     { flex: 1; }
+.cp-toast-close   {
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.5;
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 0.2rem;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.cp-toast-close:hover { opacity: 1; }

@@ -160,3 +160,176 @@ tbody td{padding:0.7rem 1rem;color:#cbd5e1;vertical-align:top}
 body:has(.shell){display:block;flex-direction:unset}
 
 .error-heading { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem; }
+
+/* ── New deceptive templates ── */
+
+/* Invoice / DocuSend */
+.tpl-invoice-header {
+  text-align: center;
+  padding: 1rem 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.tpl-invoice-logo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.tpl-invoice-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+/* Corporate / CorpDocs */
+.tpl-corporate-header {
+  text-align: center;
+  padding: 1rem 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.tpl-corporate-logo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.tpl-corporate-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+/* Shared doc / ShareDrive */
+.tpl-docs-header {
+  text-align: center;
+  padding: 1rem 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+}
+.tpl-docs-logo {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #58a6ff;
+  letter-spacing: -0.02em;
+}
+.tpl-docs-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+/* Template metadata pills (shown on available state) */
+.tpl-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem;
+}
+.tpl-meta-pill {
+  font-size: 0.72rem;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.65rem;
+}
+
+/* ── Expiry countdown (secret page) ── */
+.expiry-countdown {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1.25rem;
+  padding: 0.55rem 0.9rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.expiry-icon  { font-size: 1rem; }
+.expiry-label { color: var(--muted); }
+.expiry-timer {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.03em;
+}
+.expiry-countdown--urgent {
+  border-color: #f85149;
+  background: rgba(248,81,73,0.06);
+}
+.expiry-countdown--urgent .expiry-timer { color: #f85149; }
+.expiry-countdown--urgent .expiry-icon  { animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ── QR code (result page) ── */
+.result-qr-wrap {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.result-qr-label {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+.result-qr {
+  width: 160px;
+  height: 160px;
+  border-radius: 6px;
+  display: block;
+  /* White background + padding ensures the quiet zone is always light,
+     which is required for reliable phone scanning regardless of the
+     surrounding dark card colour. */
+  background: #ffffff;
+  padding: 8px;
+  box-sizing: content-box;
+  border: 2px solid var(--border);
+}
+
+/* ── Note input on creation form ── */
+.note-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface2, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 6px;
+  color: var(--text, #c9d1d9);
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+.note-input:focus {
+  outline: none;
+  border-color: var(--accent, #58a6ff);
+}
+.form-hint-inline {
+  font-size: 0.72rem;
+  color: var(--muted, #8b949e);
+  font-weight: 400;
+}
+
+/* ── Info pages (How it Works, Security, FAQ, Privacy, Terms) ──────────────── */
+.info-page{display:flex;flex-direction:column;gap:0}
+.info-page-header{margin-bottom:1.75rem}
+.info-page-header h1{font-size:1.5rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.4rem}
+.info-page-header p{font-size:0.88rem;color:var(--muted);line-height:1.6}
+.info-page-meta{font-size:0.78rem;color:var(--muted)}
+.info-section{display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1.5rem}
+.info-section h3{font-size:0.95rem;font-weight:700;color:var(--text);margin-top:1.25rem}
+.info-section h3:first-child{margin-top:0}
+.info-section p,.info-section ul{font-size:0.875rem;color:var(--muted);line-height:1.7}
+.info-section a{color:var(--accent);text-decoration:none}.info-section a:hover{text-decoration:underline}
+.info-list{padding-left:1.25rem;display:flex;flex-direction:column;gap:0.35rem;font-size:0.875rem;color:var(--muted);line-height:1.6}
+.info-highlight{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1.25rem 1.5rem;margin:1.25rem 0}
+.info-highlight h3{font-size:0.9rem;font-weight:700;margin-bottom:0.5rem}
+.info-highlight p{font-size:0.85rem;color:var(--muted);line-height:1.6}
+.info-step{display:flex;gap:1rem;padding:1rem 0;border-bottom:1px solid var(--border)}
+.info-step:last-child{border-bottom:none}
+.info-step-num{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-size:0.85rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.info-step-body h3{font-size:0.9rem;font-weight:700;margin-bottom:0.3rem}
+.info-step-body p{font-size:0.85rem;color:var(--muted);line-height:1.6}
+.faq-list{display:flex;flex-direction:column;gap:0}
+.faq-item{padding:1.1rem 0;border-bottom:1px solid var(--border)}
+.faq-item:last-child{border-bottom:none}
+.faq-item h3{font-size:0.9rem;font-weight:700;margin-bottom:0.4rem;color:var(--text)}
+.faq-item p{font-size:0.85rem;color:var(--muted);line-height:1.6}
+.faq-item a{color:var(--accent);text-decoration:none}.faq-item a:hover{text-decoration:underline}
+
+/* Wider card for prose/info pages */
+main.info-main .card{max-width:680px}

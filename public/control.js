@@ -1,5 +1,5 @@
 // ── Tab navigation ──────────────────────────────────────────────────────────
-const tabs = ['overview','timeline','devices','ips','logs','settings'];
+const tabs = ['overview','timeline','devices','ips','analysis','logs','settings'];
 
 tabs.forEach(name => {
   const btn = document.getElementById('nav-' + name);
@@ -15,19 +15,86 @@ function showTab(name) {
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'devices')  buildDeviceCharts();
   if (name === 'overview') buildOverview();
-  if (name === 'settings')  initSettings();
+  if (name === 'settings') initSettings();
 }
 
-// ── Copy URL button ─────────────────────────────────────────────────────────
-const copyUrlBtn = document.getElementById('copyUrlBtn');
-if (copyUrlBtn) {
-  copyUrlBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(document.getElementById('pubUrl').innerText).then(() => {
-      copyUrlBtn.textContent = 'Copied!';
-      setTimeout(() => copyUrlBtn.textContent = 'Copy Link', 2000);
-    });
+// ── IP masking ───────────────────────────────────────────────────────────────
+// Display-only: masks/reveals IP addresses across the whole page.
+// Stored data is never altered.
+
+let ipsMasked = true; // default: masked
+
+function maskIPDisplay(ip) {
+  if (!ip) return '—';
+  const v4 = ip.match(/^(\d{1,3}\.\d{1,3}\.\d{1,3})\.\d{1,3}$/);
+  if (v4) return v4[1] + '.xxx';
+  const v6 = ip.split(':');
+  if (v6.length >= 3) return v6.slice(0, 2).join(':') + ':xxxx…';
+  return ip.slice(0, 6) + '…';
+}
+
+function applyIPMask() {
+  document.querySelectorAll('.cp-ip-val').forEach(el => {
+    const raw = el.dataset.ip || '';
+    el.textContent = (raw && ipsMasked) ? maskIPDisplay(raw) : (raw || '—');
   });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Apply initial mask state
+  applyIPMask();
+
+  const maskBtn   = document.getElementById('maskIpsBtn');
+  const revealBtn = document.getElementById('revealIpsBtn');
+
+  if (maskBtn) maskBtn.addEventListener('click', () => {
+    ipsMasked = true;
+    maskBtn.classList.add('cp-ip-mask-btn-active');
+    revealBtn.classList.remove('cp-ip-mask-btn-active');
+    applyIPMask();
+  });
+
+  if (revealBtn) revealBtn.addEventListener('click', () => {
+    ipsMasked = false;
+    revealBtn.classList.add('cp-ip-mask-btn-active');
+    maskBtn.classList.remove('cp-ip-mask-btn-active');
+    applyIPMask();
+  });
+
+  // Narrative copy button
+  const copyNarrBtn = document.getElementById('copyNarrativeBtn');
+  if (copyNarrBtn) {
+    copyNarrBtn.addEventListener('click', () => {
+      const text = document.getElementById('narrativeText').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        copyNarrBtn.textContent = 'Copied!';
+        setTimeout(() => { copyNarrBtn.textContent = 'Copy'; }, 2000);
+      });
+    });
+  }
+
+  // Print / save report button
+  const printBtn = document.getElementById('printBtn');
+  if (printBtn) printBtn.addEventListener('click', () => window.print());
+
+  // Copy URL button
+  const copyUrlBtn = document.getElementById('copyUrlBtn');
+  if (copyUrlBtn) {
+    copyUrlBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(document.getElementById('pubUrl').innerText).then(() => {
+        copyUrlBtn.textContent = 'Copied!';
+        setTimeout(() => copyUrlBtn.textContent = 'Copy Link', 2000);
+      });
+    });
+  }
+
+  // Build overview on initial load if active
+  if (document.getElementById('tab-overview')?.classList.contains('active')) {
+    buildOverview();
+  }
+});
+
+
 
 // ── Raw log data ────────────────────────────────────────────────────────────
 const rawLogs = JSON.parse(document.body.dataset.uaList || '[]');
@@ -110,19 +177,35 @@ function buildActivityChart() {
   if (!canvas) return;
   if (activityChartInst) { activityChartInst.destroy(); activityChartInst = null; }
 
-  const dayCounts = {};
+  // Three separate day-keyed counters
+  const viewCounts    = {};
+  const attemptCounts = {};
+  const revealCounts  = {};
+
   rawLogs.forEach(log => {
     if (!log.accessed_at) return;
     const key = new Date(log.accessed_at * 1000).toISOString().slice(0, 10);
-    dayCounts[key] = (dayCounts[key] || 0) + 1;
+    if (log.reveal_succeeded) {
+      revealCounts[key]  = (revealCounts[key]  || 0) + 1;
+    } else if (log.reveal_attempted) {
+      attemptCounts[key] = (attemptCounts[key] || 0) + 1;
+    } else {
+      viewCounts[key]    = (viewCounts[key]    || 0) + 1;
+    }
   });
 
-  const keys = Object.keys(dayCounts).sort();
-  if (!keys.length) return;
+  // Build a continuous date range across all event types
+  const allKeys = new Set([
+    ...Object.keys(viewCounts),
+    ...Object.keys(attemptCounts),
+    ...Object.keys(revealCounts),
+  ]);
+  if (!allKeys.size) return;
 
+  const sorted = [...allKeys].sort();
   const allDays = [];
-  const cur = new Date(keys[0]);
-  const end = new Date(keys[keys.length - 1]);
+  const cur = new Date(sorted[0]);
+  const end = new Date(sorted[sorted.length - 1]);
   while (cur <= end) {
     allDays.push(cur.toISOString().slice(0, 10));
     cur.setDate(cur.getDate() + 1);
@@ -132,22 +215,56 @@ function buildActivityChart() {
     type: 'bar',
     data: {
       labels: allDays,
-      datasets: [{
-        label: 'Accesses',
-        data: allDays.map(d => dayCounts[d] || 0),
-        backgroundColor: 'rgba(88,166,255,0.5)',
-        borderColor: '#58a6ff',
-        borderWidth: 1,
-        borderRadius: 3,
-      }]
+      datasets: [
+        {
+          label: 'Views',
+          data:  allDays.map(d => viewCounts[d]    || 0),
+          backgroundColor: 'rgba(88,166,255,0.6)',
+          borderColor:     '#58a6ff',
+          borderWidth: 1,
+          borderRadius: 2,
+        },
+        {
+          label: 'Failed Attempts',
+          data:  allDays.map(d => attemptCounts[d] || 0),
+          backgroundColor: 'rgba(210,153,34,0.7)',
+          borderColor:     '#d29922',
+          borderWidth: 1,
+          borderRadius: 2,
+        },
+        {
+          label: 'Reveals',
+          data:  allDays.map(d => revealCounts[d]  || 0),
+          backgroundColor: 'rgba(248,81,73,0.75)',
+          borderColor:     '#f85149',
+          borderWidth: 1,
+          borderRadius: 2,
+        },
+      ]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false } },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: { color: '#8b949e', padding: 16, font: { size: 11 }, boxWidth: 12 },
+        },
+      },
       scales: {
-        x: { ticks: { color: '#8b949e', maxTicksLimit: 10 }, grid: { color: '#21262d' } },
-        y: { ticks: { color: '#8b949e', stepSize: 1 },       grid: { color: '#21262d' }, beginAtZero: true },
-      }
+        x: {
+          stacked: true,
+          ticks: { color: '#8b949e', maxTicksLimit: 10 },
+          grid:  { color: '#21262d' },
+        },
+        y: {
+          stacked: true,
+          ticks: { color: '#8b949e', stepSize: 1 },
+          grid:  { color: '#21262d' },
+          beginAtZero: true,
+        },
+      },
     }
   });
 }
@@ -330,6 +447,7 @@ function initSettings() {
   const saveBtn  = document.getElementById('saveWebhookBtn');
   const clearBtn = document.getElementById('clearWebhookBtn');
   const testBtn  = document.getElementById('testWebhookBtn');
+  const burnBtn  = document.getElementById('burnNowBtn');
   const input    = document.getElementById('webhookUrlInput');
   const status   = document.getElementById('webhookStatus');
 
@@ -387,7 +505,6 @@ function initSettings() {
     testBtn.disabled = true;
     testBtn.textContent = 'Sending…';
     try {
-      // Save current value first, then ping
       await saveWebhook(url);
       const res = await fetch(`/s/${token}/webhook/test`, { method: 'POST' });
       const data = await res.json();
@@ -400,14 +517,99 @@ function initSettings() {
       testBtn.textContent = 'Send Test Ping';
     }
   });
+
+  // ── Note / label ─────────────────────────────────────────────────────────
+  const saveNoteBtn  = document.getElementById('saveNoteBtn');
+  const clearNoteBtn = document.getElementById('clearNoteBtn');
+  const noteInput    = document.getElementById('noteInput');
+  const noteStatus   = document.getElementById('noteStatus');
+
+  function setNoteStatus(msg, ok) {
+    noteStatus.textContent = msg;
+    noteStatus.className = 'cp-settings-status ' + (ok ? 'cp-settings-status-ok' : 'cp-settings-status-err');
+    setTimeout(() => { noteStatus.textContent = ''; noteStatus.className = 'cp-settings-status'; }, 3500);
+  }
+
+  async function saveNote(value) {
+    const token = getPublicToken();
+    const res   = await fetch(`/s/${token}/note`, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ note: value || null }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Save failed');
+    // Update the inline meta-bar display immediately
+    const metaNote = document.getElementById('metaNoteDisplay');
+    if (value) {
+      if (metaNote) {
+        metaNote.textContent = '📝 ' + value;
+      } else {
+        // Insert it — simple approach: reload to get server-rendered HTML
+        // (only fires on explicit save, acceptable UX tradeoff)
+      }
+    } else if (metaNote) {
+      metaNote.remove();
+    }
+    return data;
+  }
+
+  if (saveNoteBtn) saveNoteBtn.addEventListener('click', async () => {
+    const val = (noteInput?.value || '').trim();
+    saveNoteBtn.disabled = true;
+    saveNoteBtn.textContent = 'Saving…';
+    try {
+      await saveNote(val);
+      setNoteStatus(val ? 'Note saved.' : 'Note cleared.', true);
+    } catch (e) {
+      setNoteStatus(e.message, false);
+    } finally {
+      saveNoteBtn.disabled = false;
+      saveNoteBtn.textContent = 'Save Note';
+    }
+  });
+
+  if (clearNoteBtn) clearNoteBtn.addEventListener('click', async () => {
+    if (noteInput) noteInput.value = '';
+    clearNoteBtn.disabled = true;
+    try {
+      await saveNote(null);
+      setNoteStatus('Note cleared.', true);
+    } catch (e) {
+      setNoteStatus(e.message, false);
+    } finally {
+      clearNoteBtn.disabled = false;
+    }
+  });
+
+  // ── Burn Now ──────────────────────────────────────────────────────────────
+  if (burnBtn) burnBtn.addEventListener('click', async () => {
+    if (!confirm('Burn this secret now? This permanently destroys it and cannot be undone.')) return;
+    const token = getPublicToken();
+    burnBtn.disabled = true;
+    burnBtn.textContent = 'Burning…';
+    try {
+      const res  = await fetch(`/s/${token}/burn`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Burn failed');
+      // Update the status indicator in the header without a full reload
+      const statusEl = document.querySelector('.cp-status');
+      if (statusEl) {
+        statusEl.textContent = '● Burned';
+        statusEl.className = 'cp-status cp-status-burned';
+      }
+      burnBtn.textContent = '🔥 Burned';
+      burnBtn.classList.add('cp-settings-btn-burned');
+      setStatus('Secret has been burned.', true);
+    } catch (e) {
+      setStatus(e.message, false);
+      burnBtn.disabled = false;
+      burnBtn.textContent = '🔥 Burn Now';
+    }
+  });
 }
 
-// Build overview on initial load if the tab is active
-document.addEventListener('DOMContentLoaded', () => {
-  if (document.getElementById('tab-overview')?.classList.contains('active')) {
-    buildOverview();
-  }
-});
+
 
 // ── US State Map ─────────────────────────────────────────────────────────────
 // geoip-lite US locations come as "City, ST, US" — ST is the 2-letter state abbrev.
@@ -511,3 +713,305 @@ function renderUSMap(mapWrap, svgText, stateCounts) {
     `</span>`;
   mapWrap.appendChild(legend);
 }
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LIVE POLLING — real-time updates without page reload
+// ═══════════════════════════════════════════════════════════════════════════
+
+const POLL_INTERVAL_MS   = 10_000;   // check every 10 seconds
+const POLL_INTERVAL_IDLE = 30_000;   // slow down when tab is hidden
+
+let pollTimer       = null;
+let lastSeenTs      = 0;             // newest accessed_at we've ingested
+let liveActive      = false;
+let pollPaused      = false;
+
+// Seed lastSeenTs from the already-rendered logs
+(function seedLastSeen() {
+  if (rawLogs.length) {
+    lastSeenTs = Math.max(...rawLogs.map(l => l.accessed_at || 0));
+  }
+})();
+
+// ── Toast notification system ────────────────────────────────────────────────
+
+function injectToastContainer() {
+  if (document.getElementById('toastContainer')) return;
+  const el = document.createElement('div');
+  el.id = 'toastContainer';
+  el.className = 'cp-toast-container';
+  document.body.appendChild(el);
+}
+
+function showToast(message, type = 'info', duration = 6000) {
+  injectToastContainer();
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `cp-toast cp-toast-${type}`;
+  toast.innerHTML = `<span class="cp-toast-icon">${type === 'danger' ? '🚨' : type === 'warn' ? '⚠️' : '📡'}</span><span class="cp-toast-msg">${message}</span><button class="cp-toast-close">✕</button>`;
+  toast.querySelector('.cp-toast-close').addEventListener('click', () => dismissToast(toast));
+  container.appendChild(toast);
+  // Trigger animation
+  requestAnimationFrame(() => toast.classList.add('cp-toast-show'));
+  if (duration > 0) setTimeout(() => dismissToast(toast), duration);
+  return toast;
+}
+
+function dismissToast(toast) {
+  toast.classList.remove('cp-toast-show');
+  toast.classList.add('cp-toast-hide');
+  setTimeout(() => toast.remove(), 400);
+}
+
+// ── Live badge in header ─────────────────────────────────────────────────────
+
+function setLiveBadge(active) {
+  let badge = document.getElementById('liveBadge');
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.id = 'liveBadge';
+    const headerRight = document.querySelector('.cp-header-right');
+    if (headerRight) headerRight.prepend(badge);
+  }
+  if (active) {
+    badge.className = 'cp-live-badge cp-live-badge-on';
+    badge.textContent = '⬤ LIVE';
+  } else {
+    badge.className = 'cp-live-badge cp-live-badge-paused';
+    badge.textContent = '⬤ PAUSED';
+  }
+}
+
+// ── Stat card updater ────────────────────────────────────────────────────────
+
+function updateStatCards(stats) {
+  const cards = document.querySelectorAll('.cp-stat');
+  const values = [stats.totalViews, stats.revealAttempts, stats.revealSuccesses, stats.uniqueIPs];
+  cards.forEach((card, i) => {
+    const valEl = card.querySelector('.cp-stat-value');
+    if (!valEl) return;
+    const oldVal = parseInt(valEl.textContent, 10);
+    const newVal = values[i];
+    if (!isNaN(oldVal) && newVal > oldVal) {
+      valEl.textContent = newVal;
+      card.classList.add('cp-stat-flash');
+      setTimeout(() => card.classList.remove('cp-stat-flash'), 1000);
+    } else {
+      valEl.textContent = newVal;
+    }
+  });
+}
+
+// ── Build a single timeline row HTML ────────────────────────────────────────
+
+function buildTimelineRowHTML(log) {
+  const dotClass = log.reveal_succeeded ? 'cp-dot-reveal' : log.reveal_attempted ? 'cp-dot-attempt' : 'cp-dot-view';
+  const event    = log.reveal_succeeded ? 'Secret Revealed' : log.reveal_attempted ? 'Reveal Attempted (failed)' : 'Page Viewed';
+  const ip       = log.ip_address || '';
+  const ipDisplay = (ipsMasked && ip) ? maskIPDisplay(ip) : (ip || 'Unknown IP');
+
+  const labels = (log._labels || []).map(lbl =>
+    `<span class="cp-evtlabel cp-evtlabel-${lbl.replace(/_/g,'-')}">${lbl.replace(/_/g,' ')}</span>`
+  ).join('');
+
+  const meta = [
+    `<span class="cp-ip-val" data-ip="${ip}">${ipDisplay}</span>`,
+    log.location   ? `<span>${log.location}</span>` : '',
+    log.timezone   ? `<span class="cp-tl-tz">${log.timezone}</span>` : '',
+    log.org        ? `<span>${log.org}</span>` : '',
+    log.accept_language ? `<span class="cp-tl-lang" title="Accept-Language">🌐 ${log.accept_language.slice(0,30)}</span>` : '',
+  ].filter(Boolean).join('');
+
+  const dt = new Date(log.accessed_at * 1000).toISOString().slice(0,19).replace('T',' ');
+  const ago = timeAgo(log.accessed_at);
+
+  return `<div class="cp-tl-row cp-tl-row-new">
+    <div class="cp-tl-dot ${dotClass}"></div>
+    <div class="cp-tl-body">
+      <div class="cp-tl-event">${event}${labels}</div>
+      <div class="cp-tl-meta">${meta}</div>
+    </div>
+    <div class="cp-tl-time" data-ts="${log.accessed_at}" title="${dt}">${ago}</div>
+  </div>`;
+}
+
+// ── Time-ago helper ──────────────────────────────────────────────────────────
+
+function timeAgo(unixTs) {
+  const secs = Math.floor(Date.now() / 1000) - unixTs;
+  if (secs < 60)   return 'just now';
+  if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs/3600)}h ago`;
+  return new Date(unixTs * 1000).toISOString().slice(0,10);
+}
+
+// ── Inject new rows into timelines ──────────────────────────────────────────
+
+function prependNewRows(newLogs) {
+  if (!newLogs.length) return;
+
+  const rowsHTML = newLogs.map(buildTimelineRowHTML).join('');
+
+  // Overview tab — recent activity (cap at 10)
+  const overviewTl = document.querySelector('#tab-overview .cp-timeline');
+  if (overviewTl) {
+    overviewTl.insertAdjacentHTML('afterbegin', rowsHTML);
+    // Keep only 10 rows
+    const rows = overviewTl.querySelectorAll('.cp-tl-row');
+    for (let i = 10; i < rows.length; i++) rows[i].remove();
+    // Remove "new" flash after animation
+    setTimeout(() => overviewTl.querySelectorAll('.cp-tl-row-new').forEach(r => r.classList.remove('cp-tl-row-new')), 2000);
+  }
+
+  // Full timeline tab
+  const fullTl = document.querySelector('#tab-timeline .cp-timeline');
+  if (fullTl) {
+    fullTl.insertAdjacentHTML('afterbegin', rowsHTML);
+    setTimeout(() => fullTl.querySelectorAll('.cp-tl-row-new').forEach(r => r.classList.remove('cp-tl-row-new')), 2000);
+  }
+
+  // If timeline tab is visible, remove empty state placeholder
+  [overviewTl, fullTl].forEach(tl => {
+    if (!tl) return;
+    const empty = tl.parentElement.querySelector('.cp-empty');
+    if (empty) empty.remove();
+  });
+
+  // Apply IP masking to newly injected rows
+  applyIPMask();
+}
+
+// ── Main poll function ───────────────────────────────────────────────────────
+
+async function pollForUpdates() {
+  const token = getPublicToken();
+  if (!token) return;
+
+  try {
+    const res  = await fetch(`/s/${token}/poll?since=${lastSeenTs}`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    // Update stat cards
+    updateStatCards(data.stats);
+
+    // Handle state changes
+    if (data.burned) {
+      const statusEl = document.querySelector('.cp-status');
+      if (statusEl && !statusEl.classList.contains('cp-status-burned')) {
+        statusEl.textContent = '● Burned';
+        statusEl.className   = 'cp-status cp-status-burned';
+        showToast('🔥 Secret has been burned — it is no longer accessible.', 'warn', 0);
+        stopPolling();
+        return;
+      }
+    }
+
+    if (!data.newLogs.length) return;
+
+    // Process new entries
+    const reveals = data.newLogs.filter(l => l.reveal_succeeded);
+    const views   = data.newLogs.filter(l => !l.reveal_attempted);
+    const fails   = data.newLogs.filter(l => l.reveal_attempted && !l.reveal_succeeded);
+
+    // Push new logs into our in-memory array (newest first)
+    data.newLogs.forEach(l => rawLogs.unshift(l));
+
+    // Update lastSeenTs
+    lastSeenTs = Math.max(lastSeenTs, ...data.newLogs.map(l => l.accessed_at));
+
+    // Inject rows into UI
+    prependNewRows(data.newLogs);
+
+    // Rebuild charts if overview is visible
+    if (document.getElementById('tab-overview')?.classList.contains('active')) {
+      setTimeout(buildOverview, 300); // small delay so DOM settles
+    }
+
+    // Toast alerts — reveals get priority
+    if (reveals.length) {
+      const loc = reveals[0].location ? ` from ${reveals[0].location}` : '';
+      showToast(`🚨 Secret REVEALED${loc} — ${new Date(reveals[0].accessed_at*1000).toLocaleTimeString()}`, 'danger', 0);
+    } else if (fails.length) {
+      showToast(`⚠️ Failed reveal attempt from ${fails[0].location || fails[0].ip_address || 'unknown'}`, 'warn');
+    } else if (views.length) {
+      const loc = views[0].location ? ` from ${views[0].location}` : '';
+      showToast(`📡 New visit${loc}`, 'info', 5000);
+    }
+
+  } catch (_e) {
+    // Silent fail — network blip shouldn't crash the panel
+  }
+}
+
+// ── Polling control ──────────────────────────────────────────────────────────
+
+function startPolling() {
+  if (pollTimer) return;
+  liveActive = true;
+  setLiveBadge(true);
+  pollTimer = setInterval(pollForUpdates, POLL_INTERVAL_MS);
+}
+
+function stopPolling() {
+  clearInterval(pollTimer);
+  pollTimer  = null;
+  liveActive = false;
+  setLiveBadge(false);
+}
+
+function pausePolling() {
+  if (!pollTimer) return;
+  clearInterval(pollTimer);
+  pollTimer = setInterval(pollForUpdates, POLL_INTERVAL_IDLE);
+  pollPaused = true;
+  setLiveBadge(false);
+}
+
+function resumePolling() {
+  if (!liveActive) return;
+  clearInterval(pollTimer);
+  pollTimer = setInterval(pollForUpdates, POLL_INTERVAL_MS);
+  pollPaused = false;
+  setLiveBadge(true);
+  // Immediate check on resume
+  pollForUpdates();
+}
+
+// Pause when hidden, resume on focus (saves resources and catches up instantly)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) pausePolling();
+  else resumePolling();
+});
+window.addEventListener('focus', () => { if (liveActive && pollPaused) resumePolling(); });
+
+// ── Boot: start polling on load (only if link is active) ────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const statusEl = document.querySelector('.cp-status');
+  const isBurned  = statusEl?.classList.contains('cp-status-burned');
+  const isExpired = statusEl?.classList.contains('cp-status-expired');
+
+  if (!isBurned && !isExpired) {
+    // Small delay so initial page render completes first
+    setTimeout(() => {
+      startPolling();
+    }, 2000);
+  } else {
+    setLiveBadge(false);
+  }
+
+  // Also update all existing time displays every minute
+  setInterval(() => {
+    document.querySelectorAll('.cp-tl-time[data-ts]').forEach(el => {
+      const ts = parseInt(el.dataset.ts, 10);
+      if (!isNaN(ts)) el.textContent = timeAgo(ts);
+    });
+  }, 60_000);
+
+  // Apply initial time-ago to server-rendered rows
+  document.querySelectorAll('.cp-tl-time[data-ts]').forEach(el => {
+    const ts = parseInt(el.dataset.ts, 10);
+    if (!isNaN(ts)) el.textContent = timeAgo(ts);
+  });
+});

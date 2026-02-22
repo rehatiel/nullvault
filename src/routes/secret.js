@@ -4,6 +4,14 @@ const { logAccess }     = require('../middleware/logger');
 const { publicLimiter } = require('../middleware/rateLimit');
 const { deobfuscate }   = require('./create');
 const { fireWebhook }   = require('../webhook');
+const { toSVG }         = require('../qr');
+const {
+  classifyLogs,
+  buildCorrelationHints,
+  annotateNetworkTypes,
+  buildNarrativeSummary,
+  LABEL_META,
+} = require('../analysis');
 
 const router = express.Router();
 
@@ -13,13 +21,14 @@ const getSecret = db.prepare(`
 `);
 
 const getSecretForControl = db.prepare(`
-  SELECT id, public_token, burned, burned_at, expires_at, created_at, burn_on_reveal, webhook_url
+  SELECT id, public_token, burned, burned_at, expires_at, created_at, burn_on_reveal, webhook_url, note
   FROM secrets WHERE public_token = ?
 `);
 
 const getLogs = db.prepare(`
-  SELECT accessed_at, ip_address, location, org, user_agent, referer,
-         request_path, reveal_attempted, reveal_succeeded
+  SELECT accessed_at, ip_address, location, org, timezone,
+         user_agent, accept_language, sec_ch_ua, sec_fetch_site,
+         referer, request_path, reveal_attempted, reveal_succeeded
   FROM access_logs WHERE secret_id = ?
   ORDER BY accessed_at DESC LIMIT 500
 `);
@@ -28,12 +37,52 @@ const updateWebhook = db.prepare(`
   UPDATE secrets SET webhook_url = @webhookUrl WHERE public_token = @token
 `);
 
+const updateNote = db.prepare(`
+  UPDATE secrets SET note = @note WHERE public_token = @token
+`);
+
 const burnSecret = db.prepare(`
   UPDATE secrets SET burned = 1, burned_at = unixepoch()
   WHERE public_token = ?
     AND burned = 0
     AND (expires_at IS NULL OR expires_at > unixepoch())
 `);
+
+const countLogs = db.prepare(`
+  SELECT COUNT(*) AS n FROM access_logs WHERE secret_id = ?
+`);
+
+// ── GET /s/:token/qr ─────────────────────────────────────────────────────────
+// Returns a self-contained SVG QR code for the public link.
+router.get('/:token/qr', async (req, res) => {
+  try {
+    const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const url     = `${baseUrl}/s/${req.params.token}`;
+    const svg     = await toSVG(url);
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.send(svg);
+  } catch (err) {
+    console.error('[QR] Error:', err.message);
+    res.status(500).send('QR generation failed');
+  }
+});
+
+// ── POST /s/:token/burn ───────────────────────────────────────────────────────
+// Manual "Burn Now" from the control panel — destroys the secret immediately.
+router.post('/:token/burn', (req, res) => {
+  try {
+    const secret = getSecretForControl.get(req.params.token);
+    if (!secret) return res.status(404).json({ error: 'Not found.' });
+    if (secret.burned) return res.json({ ok: true, alreadyBurned: true });
+
+    const result = burnSecret.run(req.params.token);
+    return res.json({ ok: true, burned: result.changes === 1 });
+  } catch (err) {
+    console.error('[Burn] Error:', err);
+    return res.status(500).json({ error: 'Burn failed.' });
+  }
+});
 
 // ── GET /s/:token/control ─────────────────────────────────────────────────
 // MUST be registered before /:token
@@ -63,6 +112,12 @@ router.get('/:token/control', (req, res) => {
       return true;
     });
 
+    // ── Heuristic analysis (additive, no new data collected) ───────────────
+    classifyLogs(logs, secret);                   // adds ._labels to each log row
+    annotateNetworkTypes(uniqueIPLogs);            // adds ._networkType to each unique IP
+    const correlationHints = buildCorrelationHints(logs);
+    const narrativeSummary = buildNarrativeSummary(logs, secret, stats);
+
     return res.render('control.njk', {
       secret, logs, stats, uniqueIPLogs,
       publicUrl:    `${baseUrl}/s/${secret.public_token}`,
@@ -70,6 +125,11 @@ router.get('/:token/control', (req, res) => {
       burned:       !!secret.burned,
       expired,
       retentionDays,
+      note:         secret.note || null,
+      // Analysis data
+      correlationHints,
+      narrativeSummary,
+      labelMeta:    LABEL_META,
     });
   } catch (err) {
     console.error('[Control] Error:', err);
@@ -77,6 +137,63 @@ router.get('/:token/control', (req, res) => {
   }
 });
 
+
+// ── GET /s/:token/poll ───────────────────────────────────────────────────────
+// Returns new log entries since a given timestamp, plus updated stats.
+// Used by the control panel for live updates without a page reload.
+router.get('/:token/poll', (req, res) => {
+  try {
+    const secret = getSecretForControl.get(req.params.token);
+    if (!secret) return res.status(404).json({ error: 'Not found.' });
+
+    const since = parseInt(req.query.since || '0', 10);
+
+    const newLogs = db.prepare(`
+      SELECT accessed_at, ip_address, location, org, timezone,
+             user_agent, accept_language, sec_ch_ua, sec_fetch_site,
+             referer, request_path, reveal_attempted, reveal_succeeded
+      FROM access_logs WHERE secret_id = ? AND accessed_at > ?
+      ORDER BY accessed_at DESC LIMIT 100
+    `).all(secret.id, since);
+
+    const allLogs = getLogs.all(secret.id);
+    const stats = {
+      totalViews:      allLogs.length,
+      revealAttempts:  allLogs.filter(l => l.reveal_attempted === 1).length,
+      revealSuccesses: allLogs.filter(l => l.reveal_succeeded === 1).length,
+      uniqueIPs:       new Set(allLogs.map(l => l.ip_address).filter(Boolean)).size,
+    };
+
+    // Classify new logs using the same heuristic engine
+    classifyLogs(newLogs, secret);
+
+    return res.json({
+      newLogs,
+      stats,
+      burned:  !!secret.burned,
+      expired: !!(secret.expires_at && secret.expires_at < Math.floor(Date.now() / 1000)),
+    });
+  } catch (err) {
+    console.error('[Poll] Error:', err);
+    return res.status(500).json({ error: 'Poll failed.' });
+  }
+});
+
+// ── POST /s/:token/note ──────────────────────────────────────────────────────
+router.post('/:token/note', (req, res) => {
+  try {
+    const secret = getSecretForControl.get(req.params.token);
+    if (!secret) return res.status(404).json({ error: 'Not found.' });
+
+    const raw  = req.body?.note;
+    const note = typeof raw === 'string' ? raw.trim().slice(0, 500) || null : null;
+    updateNote.run({ note, token: req.params.token });
+    return res.json({ ok: true, note });
+  } catch (err) {
+    console.error('[Note] Error:', err);
+    return res.status(500).json({ error: 'Failed to update note.' });
+  }
+});
 
 // ── POST /s/:token/webhook ────────────────────────────────────────────────
 router.post('/:token/webhook', (req, res) => {
@@ -123,17 +240,38 @@ router.post('/:token/webhook/test', async (req, res) => {
 // ── GET /s/:token ─────────────────────────────────────────────────────────
 router.get('/:token', publicLimiter, (req, res) => {
   const secret = getSecret.get(req.params.token);
-  if (!secret) return res.render('secret.njk', { state: 'unavailable', content: null, template: 'default', token: '' });
+  if (!secret) return res.render('secret.njk', { state: 'unavailable', content: null, template: 'default', token: '', expiresAt: null });
 
   const expired   = secret.expires_at && secret.expires_at < Math.floor(Date.now() / 1000);
   const available = !secret.burned && !expired;
 
-  logAccess(req, secret.id, false, false);
+  // Log the visit first, then check if this was the first ever access
+  const { ip, geo } = logAccess(req, secret.id, false, false);
+  const baseUrl = process.env.BASE_URL || '';
+
+  // Fire first-access webhook if this is the very first log entry for this secret
+  if (secret.webhook_url && available) {
+    const { n } = countLogs.get(secret.id);
+    if (n === 1) {
+      // n===1 means we just inserted the first log row above
+      fireWebhook(secret.webhook_url, {
+        event:     'first_access',
+        revealed:  false,
+        publicUrl: `${baseUrl}/s/${secret.public_token}`,
+        ip,
+        location:  geo ? geo.display : null,
+        userAgent: req.headers['user-agent'] || null,
+        referer:   req.headers['referer']    || null,
+      });
+    }
+  }
+
   return res.render('secret.njk', {
-    state:    available ? 'available' : 'burned',
-    content:  null,
-    template: secret.template,
-    token:    secret.public_token,
+    state:     available ? 'available' : 'burned',
+    content:   null,
+    template:  secret.template,
+    token:     secret.public_token,
+    expiresAt: secret.expires_at || null,
   });
 });
 

@@ -1,0 +1,62 @@
+{% extends "base.njk" %}
+{% set mainClass = "info-main" %}
+
+{% block title %}Terms of Service — {{ siteName }}{% endblock %}
+
+{% block content %}
+<div class="info-page">
+  <div class="info-page-header">
+    <h1>Terms of Service</h1>
+    <p class="info-page-meta">Last updated: January 2025</p>
+  </div>
+
+  <div class="info-section">
+    <h3>Acceptance of terms</h3>
+    <p>By accessing or using {{ siteName }}, you agree to be bound by these Terms of Service. If you do not agree to these terms, do not use this service.</p>
+
+    <h3>Description of service</h3>
+    <p>{{ siteName }} provides a self-hosted, open-source tool for creating single-use, self-destructing links that carry a piece of sensitive text. Each link may be accessed once (or a limited number of times), after which the content is permanently deleted. The service also provides a private control panel for monitoring link access.</p>
+
+    <h3>Acceptable use</h3>
+    <p>You may use {{ siteName }} for any lawful purpose. You agree that you will not use the service to:</p>
+    <ul class="info-list">
+      <li>Transmit, store, or share illegal content of any kind</li>
+      <li>Harass, threaten, or harm any individual</li>
+      <li>Engage in phishing, fraud, or identity theft</li>
+      <li>Distribute malware, spyware, or other malicious software</li>
+      <li>Violate the privacy of others without legal authority to do so</li>
+      <li>Circumvent applicable laws or regulations</li>
+    </ul>
+
+    <h3>No guarantee of delivery or availability</h3>
+    <p>{{ siteName }} is provided on an "as is" basis. We do not guarantee that secrets will be delivered, that links will remain accessible for any particular duration, or that the service will be available at any given time. Links may expire or be deleted at any time at the operator's discretion.</p>
+
+    <h3>Ephemeral content</h3>
+    <p>You acknowledge that secrets created through {{ siteName }} are designed to be temporary and that the content may be permanently deleted at any time — including before your intended recipient accesses it. You should retain a copy of any information you share through the service if you may need it again.</p>
+
+    <h3>No warranty</h3>
+    <p>{{ siteName }} is provided without warranty of any kind, express or implied. The operator does not warrant that the service is secure, error-free, or fit for any particular purpose. Use the service at your own risk.</p>
+
+    <h3>Limitation of liability</h3>
+    <p>To the fullest extent permitted by applicable law, the operator of this {{ siteName }} instance shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the service, even if advised of the possibility of such damages.</p>
+
+    <h3>Indemnification</h3>
+    <p>You agree to indemnify and hold harmless the operator from any claims, damages, or expenses — including reasonable legal fees — arising from your use of the service or your violation of these terms.</p>
+
+    <h3>Intellectual property</h3>
+    <p>{{ siteName }} is open-source software released under the MIT License. You are free to use, modify, and redistribute the source code in accordance with the terms of that license. Content you create and share through the service remains your own.</p>
+
+    <h3>Access logs and privacy</h3>
+    <p>By creating a secret link, you acknowledge that access to that link will be logged as described in our <a href="/privacy">Privacy Policy</a>. By accessing a secret link created by another user, you acknowledge that your visit is logged and may be visible to the link creator.</p>
+
+    <h3>Modifications to terms</h3>
+    <p>The operator reserves the right to modify these terms at any time. Continued use of the service after changes are posted constitutes acceptance of the updated terms.</p>
+
+    <h3>Governing law</h3>
+    <p>These terms are governed by the laws of the jurisdiction in which the operator is located. Any disputes arising from these terms or your use of the service shall be subject to the exclusive jurisdiction of the courts in that jurisdiction.</p>
+
+    <h3>Contact</h3>
+    <p>If you have questions about these terms, please contact the operator of this {{ siteName }} instance directly.</p>
+  </div>
+</div>
+{% endblock %}

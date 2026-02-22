@@ -20,6 +20,7 @@ app.use(helmet({
       styleSrc:   ["'self'"],
       scriptSrc:  ["'self'"],
       fontSrc:    ["'self'"],
+      imgSrc:     ["'self'"],
       connectSrc: ["'self'"],
       frameAncestors: ["'none'"],
     },
@@ -41,12 +42,31 @@ env.addFilter('date',     ts  => new Date(ts * 1000).toISOString().slice(0, 10))
 env.addFilter('datetime', ts  => new Date(ts * 1000).toISOString().slice(0, 19).replace('T', ' '));
 env.addFilter('truncate', (str, len) => str && str.length > len ? str.slice(0, len) + '…' : (str || ''));
 
+// Site branding — configurable via .env
+const SITE_NAME  = process.env.SITE_NAME  || 'NullVault';
+const SITE_LOGO  = process.env.SITE_LOGO  || '🔒';
+
+// Inject branding and current year into every template
+app.use((req, res, next) => {
+  res.locals.siteName    = SITE_NAME;
+  res.locals.siteLogo    = SITE_LOGO;
+  res.locals.currentYear = new Date().getFullYear();
+  next();
+});
+
 app.set('view engine', 'njk');
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(express.json({ limit: '4kb' }));
 
 app.get('/', (_req, res) => res.render('index.njk'));
+
+// ── Info pages ────────────────────────────────────────────────────────────────
+app.get('/how-it-works', (_req, res) => res.render('how-it-works.njk'));
+app.get('/security',     (_req, res) => res.render('security.njk'));
+app.get('/faq',          (_req, res) => res.render('faq.njk'));
+app.get('/privacy',      (_req, res) => res.render('privacy.njk'));
+app.get('/terms',        (_req, res) => res.render('terms.njk'));
 
 app.use('/health', healthRoutes);
 app.use('/s',      secretRoutes);

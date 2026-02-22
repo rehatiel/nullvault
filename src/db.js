@@ -30,7 +30,11 @@ db.exec(`
     ip_address       TEXT,
     location         TEXT,
     org              TEXT,
+    timezone         TEXT,
     user_agent       TEXT,
+    accept_language  TEXT,
+    sec_ch_ua        TEXT,
+    sec_fetch_site   TEXT,
     referer          TEXT,
     request_path     TEXT,
     reveal_attempted INTEGER NOT NULL DEFAULT 0,
@@ -47,9 +51,14 @@ const sCols = db.prepare('PRAGMA table_info(secrets)').all().map(c => c.name);
 if (!sCols.includes('template'))       db.exec(`ALTER TABLE secrets ADD COLUMN template TEXT NOT NULL DEFAULT 'default'`);
 if (!sCols.includes('webhook_url'))    db.exec(`ALTER TABLE secrets ADD COLUMN webhook_url TEXT`);
 if (!sCols.includes('burn_on_reveal')) db.exec(`ALTER TABLE secrets ADD COLUMN burn_on_reveal INTEGER NOT NULL DEFAULT 0`);
+if (!sCols.includes('note'))           db.exec(`ALTER TABLE secrets ADD COLUMN note TEXT`);
 
 const lCols = db.prepare('PRAGMA table_info(access_logs)').all().map(c => c.name);
-if (!lCols.includes('location')) db.exec(`ALTER TABLE access_logs ADD COLUMN location TEXT`);
-if (!lCols.includes('org'))      db.exec(`ALTER TABLE access_logs ADD COLUMN org TEXT`);
+if (!lCols.includes('location'))        db.exec(`ALTER TABLE access_logs ADD COLUMN location TEXT`);
+if (!lCols.includes('org'))             db.exec(`ALTER TABLE access_logs ADD COLUMN org TEXT`);
+if (!lCols.includes('timezone'))        db.exec(`ALTER TABLE access_logs ADD COLUMN timezone TEXT`);
+if (!lCols.includes('accept_language')) db.exec(`ALTER TABLE access_logs ADD COLUMN accept_language TEXT`);
+if (!lCols.includes('sec_ch_ua'))       db.exec(`ALTER TABLE access_logs ADD COLUMN sec_ch_ua TEXT`);
+if (!lCols.includes('sec_fetch_site'))  db.exec(`ALTER TABLE access_logs ADD COLUMN sec_fetch_site TEXT`);
 
 module.exports = db;

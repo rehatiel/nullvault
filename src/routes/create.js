@@ -6,8 +6,8 @@ const { createLimiter } = require('../middleware/rateLimit');
 const router = express.Router();
 
 const insertSecret = db.prepare(`
-  INSERT INTO secrets (public_token, control_token, content, template, expires_at, burn_on_reveal)
-  VALUES (@publicToken, @controlToken, @content, @template, @expiresAt, @burnOnReveal)
+  INSERT INTO secrets (public_token, control_token, content, note, template, expires_at, burn_on_reveal)
+  VALUES (@publicToken, @controlToken, @content, @note, @template, @expiresAt, @burnOnReveal)
 `);
 
 function obfuscate(text, key) {
@@ -27,7 +27,7 @@ function deobfuscate(b64, key) {
 }
 
 router.post('/', createLimiter, (req, res) => {
-  const { content, expiryDays, template, burnOnReveal } = req.body || {};
+  const { content, expiryDays, template, burnOnReveal, note } = req.body || {};
 
   if (!content || typeof content !== 'string' || content.trim().length === 0)
     return res.status(400).json({ error: 'content is required.' });
@@ -38,16 +38,19 @@ router.post('/', createLimiter, (req, res) => {
   const controlToken = crypto.randomBytes(32).toString('base64url');
   const obfuscated   = obfuscate(content.trim(), publicToken);
 
-  const validTemplates = ['default', 'banking', 'crypto'];
+  const validTemplates = ['default', 'banking', 'crypto', 'invoice', 'corporate', 'docs'];
   const chosenTemplate = validTemplates.includes(template) ? template : 'default';
 
   const defaultExpiry = parseInt(process.env.DEFAULT_EXPIRY_DAYS || '30', 10);
   const days          = typeof expiryDays === 'number' ? expiryDays : defaultExpiry;
   const expiresAt     = days > 0 ? Math.floor(Date.now() / 1000) + days * 86400 : null;
 
+  const chosenNote = typeof note === 'string' ? note.trim().slice(0, 500) || null : null;
+
   insertSecret.run({
     publicToken, controlToken,
     content:      obfuscated,
+    note:         chosenNote,
     template:     chosenTemplate,
     expiresAt,
     burnOnReveal: burnOnReveal ? 1 : 0,

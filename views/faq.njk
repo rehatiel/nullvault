@@ -1,0 +1,76 @@
+{% extends "base.njk" %}
+{% set mainClass = "info-main" %}
+
+{% block title %}FAQ — {{ siteName }}{% endblock %}
+
+{% block content %}
+<div class="info-page">
+  <div class="info-page-header">
+    <h1>Frequently Asked Questions</h1>
+  </div>
+
+  <div class="faq-list">
+
+    <div class="faq-item">
+      <h3>What happens to my secret after it's revealed?</h3>
+      <p>When "Burn after reading" is enabled, the content is permanently deleted from the server the moment your recipient reveals it. It cannot be retrieved by anyone — including the server operator. If the option is disabled, the content persists until the link expires.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Can {{ siteName }} read my secrets?</h3>
+      <p>Secret content is stored in an obfuscated form keyed to the public token. The server processes the content when generating and revealing a secret, but no plaintext is stored at rest. Because this is a self-hosted application, security depends on who controls the server infrastructure.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>What if someone opens my link before the intended recipient?</h3>
+      <p>With "Burn after reading" enabled, the link can only be opened once. If an unintended party opens it first, the secret will be consumed and your intended recipient will see an "unavailable" message. Your Control Link will show you exactly when and from where the link was accessed, so you can detect this immediately and revoke or re-create the secret.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>How do I monitor who accessed my link?</h3>
+      <p>Every secret comes with a private Control Link. Open it to see a full access log with timestamps, approximate locations, device types, and referrers. You can also configure a webhook to receive an instant notification when your link is first opened.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>What is the Control Link and how do I keep it safe?</h3>
+      <p>The Control Link is your private dashboard for a specific secret. It is a long, random URL that is only generated once and never shown again after creation. Treat it like a password — anyone who has it can view access logs, update the webhook, and manually destroy the secret. Store it somewhere safe, such as a password manager.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Can I revoke a link before it's opened?</h3>
+      <p>Yes. From your Control Link dashboard, click "Burn Now" at any time to permanently destroy the secret before anyone has a chance to reveal it. This is useful if you sent a link to the wrong person or simply changed your mind.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>What happens when a link expires?</h3>
+      <p>Expired links stop working immediately. The content is marked for deletion and removed on the next cleanup cycle. Your recipient will see an "unavailable" message if they try to access an expired link.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Is there a size limit on secrets?</h3>
+      <p>Yes. Secret content is capped at 4,096 characters. This is intentional — {{ siteName }} is designed for short, discrete pieces of sensitive information such as passwords, tokens, and one-time codes, not for transferring large files.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Can I use {{ siteName }} via the API?</h3>
+      <p>Yes. The <code>POST /create</code> endpoint accepts JSON and requires an <code>X-Creation-Secret</code> header configured by the server operator. This allows you to integrate secret sharing into scripts, CI/CD pipelines, and other automated workflows.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Does {{ siteName }} log IP addresses?</h3>
+      <p>Yes — the access log records the IP address of anyone who visits a public link. This is disclosed clearly in our <a href="/privacy">Privacy Policy</a>. The IP is used solely for the access log visible to the link creator through the Control Link. It is never sold or shared with third parties.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>How long are access logs retained?</h3>
+      <p>Access logs are automatically deleted after 30 days by default. The server operator can configure this retention window. Logs for a secret are also deleted when the secret itself is burned or expires.</p>
+    </div>
+
+    <div class="faq-item">
+      <h3>Is {{ siteName }} open source?</h3>
+      <p>Yes. The full source code is publicly available. You can audit it, self-host it, and verify exactly what the application does.</p>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

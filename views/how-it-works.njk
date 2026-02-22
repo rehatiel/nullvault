@@ -1,0 +1,57 @@
+{% extends "base.njk" %}
+{% set mainClass = "info-main" %}
+
+{% block title %}How It Works — {{ siteName }}{% endblock %}
+
+{% block content %}
+<div class="info-page">
+  <div class="info-page-header">
+    <h1>How It Works</h1>
+    <p>{{ siteName }} lets you share sensitive information through a single-use, self-destructing link — so your secrets never linger in email threads or chat histories.</p>
+  </div>
+
+  <div class="info-section">
+    <div class="info-step">
+      <div class="info-step-num">1</div>
+      <div class="info-step-body">
+        <h3>You enter your secret</h3>
+        <p>Paste the text you want to share — a password, API key, one-time code, or any other sensitive information. Your content is encrypted in your browser before it ever leaves your device.</p>
+      </div>
+    </div>
+    <div class="info-step">
+      <div class="info-step-num">2</div>
+      <div class="info-step-body">
+        <h3>We generate a unique link</h3>
+        <p>{{ siteName }} creates a cryptographically random URL tied to your secret. You also receive a private <strong>Control Link</strong> that lets you monitor access and revoke the secret at any time — without exposing its contents.</p>
+      </div>
+    </div>
+    <div class="info-step">
+      <div class="info-step-num">3</div>
+      <div class="info-step-body">
+        <h3>You share the link</h3>
+        <p>Send the public link to your recipient via any channel — email, Slack, SMS, or a QR code. The link works exactly once. After it has been opened, it is permanently destroyed.</p>
+      </div>
+    </div>
+    <div class="info-step">
+      <div class="info-step-num">4</div>
+      <div class="info-step-body">
+        <h3>The secret self-destructs</h3>
+        <p>When your recipient clicks the link and reveals the secret, the content is immediately and irreversibly deleted from the server. If the link expires before anyone opens it, the content is deleted automatically as well.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-highlight">
+    <h3>Your Control Link</h3>
+    <p>Every secret comes with a private Control Link that only you receive. From the control panel, you can see when the link was accessed, set up webhook notifications, or manually burn (destroy) the secret before anyone opens it. The Control Link is never shared and is not guessable — treat it like a password.</p>
+  </div>
+
+  <div class="info-section">
+    <h3>Expiry options</h3>
+    <p>You can set your secret to expire automatically after 1, 3, 7, 14, or 30 days — or configure it to never expire. Once the expiry time passes, the link stops working and the content is deleted regardless of whether it was ever accessed.</p>
+
+    <h3 style="margin-top:1.5rem">Burn on reveal</h3>
+    <p>When "Burn after reading" is enabled, the secret is deleted the moment it is first revealed. If it is disabled, the content remains accessible until the link expires — useful when you want to allow multiple views of the same content while still being able to revoke access at any time.</p>
+  </div>
+</div>
+{% endblock %}

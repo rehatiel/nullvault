@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>NullVault — Control Panel</title>
+  <title>{{ siteName }} — Control Panel</title>
   <link rel="stylesheet" href="/style.css" />
   <link rel="stylesheet" href="/control-panel.css" />
   <script src="/chart.min.js"></script>
@@ -15,11 +15,12 @@
   {# ── Header ── #}
   <header class="cp-header">
     <div class="cp-header-left">
-      <a class="cp-logo" href="/">🔒 NullVault</a>
+      <a class="cp-logo" href="/">{{ siteLogo }} {{ siteName }}</a>
       <span class="cp-divider">/</span>
       <span class="cp-title">Control Panel</span>
     </div>
     <div class="cp-header-right">
+      <button class="cp-print-btn" id="printBtn" title="Print / save report">🖨 Print</button>
       {% if burned %}
         <span class="cp-status cp-status-burned">● Burned</span>
       {% elif expired %}
@@ -42,6 +43,11 @@
         <span class="cp-meta-item">🔥 <strong>Burns on reveal</strong></span>
       {% else %}
         <span class="cp-meta-item">♻️ <strong>Persistent</strong></span>
+      {% endif %}
+      {# Note/label — shown inline if set, dimmed placeholder if not #}
+      {% if note %}
+        <span class="cp-meta-sep">·</span>
+        <span class="cp-meta-item cp-meta-note" id="metaNoteDisplay" title="Your label for this link">📝 {{ note }}</span>
       {% endif %}
     </div>
     <div class="cp-url-row">
@@ -76,9 +82,18 @@
     <button class="cp-tab" id="nav-timeline">Timeline</button>
     <button class="cp-tab" id="nav-devices">Devices</button>
     <button class="cp-tab" id="nav-ips">IP Addresses</button>
+    <button class="cp-tab" id="nav-analysis">Analysis</button>
     <button class="cp-tab" id="nav-logs">Raw Logs</button>
     <button class="cp-tab" id="nav-settings">Settings</button>
   </nav>
+
+  {# ── IP masking toolbar ── #}
+  <div class="cp-ip-mask-bar no-print">
+    <span class="cp-ip-mask-label">IP display:</span>
+    <button class="cp-ip-mask-btn cp-ip-mask-btn-active" id="maskIpsBtn">Masked</button>
+    <button class="cp-ip-mask-btn" id="revealIpsBtn">Full</button>
+    <span class="cp-ip-mask-note">Masking hides the last octet for screenshots and educational use. Stored data is unchanged.</span>
+  </div>
 
   {# ── Tab content ── #}
   <div class="cp-content">
@@ -114,7 +129,7 @@
         <div class="cp-section-title cp-section-title-gap">Access Map</div>
         <div id="worldMap" class="cp-map-wrap"></div>
 
-        {# US state map — shown automatically when US traffic is detected #}
+        {# US state map — shown when US traffic detected #}
         <div id="usMapSection" hidden>
           <div class="cp-section-title cp-section-title-gap">United States — State Breakdown</div>
           <div id="usMap" class="cp-map-wrap cp-map-wrap--us"></div>
@@ -132,14 +147,21 @@
                 {% elif log.reveal_attempted %}Reveal Attempted (failed)
                 {% else %}Page Viewed
                 {% endif %}
+                {% if log._labels %}
+                  {% for lbl in log._labels %}
+                    <span class="cp-evtlabel cp-evtlabel-{{ lbl | replace('_', '-') }}">{{ lbl | replace('_', ' ') }}</span>
+                  {% endfor %}
+                {% endif %}
               </div>
               <div class="cp-tl-meta">
-                <span>{{ log.ip_address or 'Unknown IP' }}</span>
+                <span class="cp-ip-val" data-ip="{{ log.ip_address or '' }}">{{ log.ip_address or 'Unknown IP' }}</span>
                 {% if log.location %}<span>{{ log.location }}</span>{% endif %}
+                {% if log.timezone %}<span class="cp-tl-tz">{{ log.timezone }}</span>{% endif %}
                 {% if log.org %}<span>{{ log.org }}</span>{% endif %}
+                {% if log.accept_language %}<span class="cp-tl-lang" title="Accept-Language">🌐 {{ log.accept_language | truncate(30) }}</span>{% endif %}
               </div>
             </div>
-            <div class="cp-tl-time">{{ log.accessed_at | datetime }}</div>
+            <div class="cp-tl-time" data-ts="{{ log.accessed_at }}" title="{{ log.accessed_at | datetime }}">{{ log.accessed_at | datetime }}</div>
           </div>
           {% endfor %}
         </div>
@@ -163,15 +185,23 @@
                 {% elif log.reveal_attempted %}Reveal Attempted (failed)
                 {% else %}Page Viewed
                 {% endif %}
+                {% if log._labels %}
+                  {% for lbl in log._labels %}
+                    <span class="cp-evtlabel cp-evtlabel-{{ lbl | replace('_', '-') }}">{{ lbl | replace('_', ' ') }}</span>
+                  {% endfor %}
+                {% endif %}
               </div>
               <div class="cp-tl-meta">
-                <span>{{ log.ip_address or 'Unknown IP' }}</span>
+                <span class="cp-ip-val" data-ip="{{ log.ip_address or '' }}">{{ log.ip_address or 'Unknown IP' }}</span>
                 {% if log.location %}<span>{{ log.location }}</span>{% endif %}
+                {% if log.timezone %}<span class="cp-tl-tz">{{ log.timezone }}</span>{% endif %}
                 {% if log.org %}<span>{{ log.org }}</span>{% endif %}
+                {% if log.accept_language %}<span class="cp-tl-lang" title="Accept-Language">🌐 {{ log.accept_language | truncate(30) }}</span>{% endif %}
+                {% if log.sec_fetch_site %}<span class="cp-tl-fetch cp-fetch-{{ log.sec_fetch_site }}">{{ log.sec_fetch_site }}</span>{% endif %}
                 {% if log.referer %}<span>ref: {{ log.referer | truncate(50) }}</span>{% endif %}
               </div>
             </div>
-            <div class="cp-tl-time">{{ log.accessed_at | datetime }}</div>
+            <div class="cp-tl-time" data-ts="{{ log.accessed_at }}" title="{{ log.accessed_at | datetime }}">{{ log.accessed_at | datetime }}</div>
           </div>
           {% endfor %}
         </div>
@@ -181,7 +211,7 @@
     {# ══ DEVICES ══ #}
     <div id="tab-devices" class="cp-panel">
       <div class="cp-section-title">Device Breakdown</div>
-      <p class="cp-hint">Parsed from {{ stats.totalViews }} User-Agent string(s).</p>
+      <p class="cp-hint">Parsed from {{ stats.totalViews }} User-Agent string(s). Where available, Client Hints (Sec-CH-UA) provide more reliable browser/OS data than UA string parsing.</p>
       <div class="cp-device-grid">
         <div class="cp-device-col">
           <div class="cp-device-heading">Browsers</div>
@@ -194,6 +224,25 @@
       </div>
 
       {% if logs | length > 0 %}
+
+      {# Client Hints section — only shown when at least one row has sec_ch_ua #}
+      {% set hasClientHints = false %}
+      {% for log in logs %}{% if log.sec_ch_ua %}{% set hasClientHints = true %}{% endif %}{% endfor %}
+
+      {% if hasClientHints %}
+      <div class="cp-section-title cp-section-title-gap">Client Hints (Sec-CH-UA)</div>
+      <p class="cp-hint">Chromium-based browsers send these automatically. More reliable than User-Agent strings for identifying the browser brand and version.</p>
+      <div class="cp-ua-list">
+        {% for log in logs %}
+          {% if log.sec_ch_ua %}
+            <div class="cp-ua-row cp-ua-row-ch">
+              <span class="cp-ua-ch-badge">CH</span>{{ log.sec_ch_ua }}
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
       <div class="cp-section-title cp-section-title-gap">Raw User-Agent Strings</div>
       <div class="cp-ua-list">
         {% for log in logs %}
@@ -208,22 +257,104 @@
     {# ══ IPS ══ #}
     <div id="tab-ips" class="cp-panel">
       <div class="cp-section-title">Unique IP Addresses</div>
+      <p class="cp-hint cp-hint-warn">
+        ℹ️ Network type and all OSINT links are provided for investigative reference. Lookups open third-party sites in a new tab — NullVault does not share any data with them. Network type labels are heuristic estimates only.
+      </p>
       {% if uniqueIPLogs | length == 0 %}
         <div class="cp-empty">No IP data available.</div>
       {% else %}
         <div class="cp-ip-grid">
           {% for log in uniqueIPLogs %}
           <div class="cp-ip-card">
-            <div class="cp-ip-addr">{{ log.ip_address }}</div>
+            <div class="cp-ip-addr cp-ip-val" data-ip="{{ log.ip_address }}">{{ log.ip_address }}</div>
             <div class="cp-ip-details">
               {% if log.location %}<div class="cp-ip-row"><span class="cp-ip-label">Location</span><span>{{ log.location }}</span></div>{% endif %}
-              {% if log.org %}<div class="cp-ip-row"><span class="cp-ip-label">Org</span><span>{{ log.org }}</span></div>{% endif %}
-              <div class="cp-ip-row"><span class="cp-ip-label">First Seen</span><span>{{ log.accessed_at | datetime }}</span></div>
+              {% if log.timezone %}<div class="cp-ip-row"><span class="cp-ip-label">Timezone</span><span>{{ log.timezone }}</span></div>{% endif %}
+              {% if log.org %}<div class="cp-ip-row"><span class="cp-ip-label">Org / ISP</span><span>{{ log.org }}</span></div>{% endif %}
+              <div class="cp-ip-row">
+                <span class="cp-ip-label">Est. network</span>
+                <span class="cp-nettype cp-nettype-{{ log._networkType | lower | replace(' ', '-') | replace('/', '-') }}">{{ log._networkType }}</span>
+              </div>
+              {% if log.accept_language %}<div class="cp-ip-row"><span class="cp-ip-label">Language</span><span class="cp-ip-lang">{{ log.accept_language }}</span></div>{% endif %}
+              {% if log.sec_ch_ua %}<div class="cp-ip-row"><span class="cp-ip-label">Client Hints</span><span class="cp-ip-ch">{{ log.sec_ch_ua | truncate(80) }}</span></div>{% endif %}
+              <div class="cp-ip-row"><span class="cp-ip-label">First seen</span><span>{{ log.accessed_at | datetime }}</span></div>
             </div>
-            <a class="cp-ip-link" href="https://www.abuseipdb.com/check/{{ log.ip_address }}" target="_blank" rel="noopener noreferrer">AbuseIPDB ↗</a>
+            {# OSINT quick-lookup links #}
+            <div class="cp-osint-links">
+              <span class="cp-osint-label">OSINT lookups:</span>
+              <a class="cp-osint-link" href="https://www.abuseipdb.com/check/{{ log.ip_address }}" target="_blank" rel="noopener noreferrer">AbuseIPDB</a>
+              <a class="cp-osint-link" href="https://scamalytics.com/ip/{{ log.ip_address }}" target="_blank" rel="noopener noreferrer">Scamalytics</a>
+              <a class="cp-osint-link" href="https://ipinfo.io/{{ log.ip_address }}" target="_blank" rel="noopener noreferrer">IPInfo</a>
+              <a class="cp-osint-link" href="https://www.shodan.io/host/{{ log.ip_address }}" target="_blank" rel="noopener noreferrer">Shodan</a>
+              <a class="cp-osint-link" href="https://viz.greynoise.io/ip/{{ log.ip_address }}" target="_blank" rel="noopener noreferrer">GreyNoise</a>
+            </div>
           </div>
           {% endfor %}
         </div>
+      {% endif %}
+    </div>
+
+    {# ══ ANALYSIS ══ #}
+    <div id="tab-analysis" class="cp-panel">
+
+      <div class="cp-analysis-disclaimer">
+        <div class="cp-analysis-disclaimer-icon">⚠️</div>
+        <div>
+          <strong>Heuristic analysis — not attribution.</strong>
+          All observations on this tab are automatically derived from existing log data using lightweight pattern-matching.
+          They are approximate, may be inaccurate, and <strong>do not establish identity, physical location, or intent</strong>.
+          Shared IPs, VPNs, NAT gateways, link-preview bots, and browser behaviour can all produce misleading signals.
+        </div>
+      </div>
+
+      {% if logs | length == 0 %}
+        <div class="cp-empty">No activity recorded yet.</div>
+      {% else %}
+
+        <div class="cp-section-title">Observed Patterns</div>
+        <p class="cp-hint">Cross-event observations. All are approximate and low-confidence.</p>
+
+        {% if correlationHints | length == 0 %}
+          <div class="cp-analysis-empty">No notable patterns detected in the current log set.</div>
+        {% else %}
+          <div class="cp-hints-list">
+            {% for hint in correlationHints %}
+            <div class="cp-hint-card cp-hint-{{ hint.severity }}">
+              <div class="cp-hint-severity">{{ hint.severity }}</div>
+              <div class="cp-hint-desc">{{ hint.description }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="cp-section-title cp-section-title-gap">Event Classification Labels</div>
+        <p class="cp-hint">Labels shown on the Timeline tab. Each reflects a single heuristic rule.</p>
+        <div class="cp-label-legend">
+          {% for key, meta in labelMeta %}
+          <div class="cp-label-legend-row">
+            <span class="cp-evtlabel cp-evtlabel-{{ key | replace('_', '-') }}">{{ meta.text }}</span>
+            <span class="cp-label-legend-desc">
+              {% if key == 'first_visit' %}No prior requests from this IP in the log window.
+              {% elif key == 'repeat_visit_same_ip' %}This IP has accessed the link at least once before.
+              {% elif key == 'repeat_visit_new_ip' %}A new IP, but prior activity from a different IP exists.
+              {% elif key == 'rapid_revisit' %}Two or more hits from the same IP within 60 seconds — may be a reload, bot, or preview.
+              {% elif key == 'expired_link_access' %}Request arrived after the link's expiry timestamp.
+              {% elif key == 'burned_link_access' %}Request arrived after the link was burned.
+              {% elif key == 'non_browser_user_agent' %}User-Agent does not begin with "Mozilla/" — likely a script, CLI tool, or app.
+              {% else %}Heuristic label.
+              {% endif %}
+            </span>
+          </div>
+          {% endfor %}
+        </div>
+
+        <div class="cp-section-title cp-section-title-gap">Narrative Summary</div>
+        <p class="cp-hint">Auto-generated plain-English summary. Suitable for reports. Contains no identity claims.</p>
+        <div class="cp-narrative-wrap">
+          <pre class="cp-narrative" id="narrativeText">{{ narrativeSummary }}</pre>
+          <button class="cp-settings-btn cp-narrative-copy-btn" id="copyNarrativeBtn">Copy</button>
+        </div>
+
       {% endif %}
     </div>
 
@@ -236,23 +367,39 @@
             <tr>
               <th>Time</th>
               <th>IP</th>
-              <th>Location</th>
+              <th>Location / TZ</th>
+              <th>Language</th>
+              <th>Fetch context</th>
+              <th>Labels</th>
               <th>Event</th>
-              <th>Path</th>
               <th>Referer</th>
             </tr>
           </thead>
           <tbody>
             {% if logs | length == 0 %}
-              <tr><td colspan="6" class="cp-empty">No logs yet.</td></tr>
+              <tr><td colspan="8" class="cp-empty">No logs yet.</td></tr>
             {% else %}
               {% for log in logs %}
               <tr>
                 <td class="cp-mono cp-nowrap">{{ log.accessed_at | datetime }}</td>
-                <td class="cp-mono">{{ log.ip_address or '—' }}</td>
+                <td class="cp-mono"><span class="cp-ip-val" data-ip="{{ log.ip_address or '' }}">{{ log.ip_address or '—' }}</span></td>
                 <td>
                   <div>{{ log.location or '—' }}</div>
                   {% if log.org %}<div class="cp-sub">{{ log.org }}</div>{% endif %}
+                  {% if log.timezone %}<div class="cp-sub cp-tz">{{ log.timezone }}</div>{% endif %}
+                </td>
+                <td class="cp-mono">{{ log.accept_language or '—' }}</td>
+                <td>
+                  {% if log.sec_fetch_site %}
+                    <span class="cp-fetch-badge cp-fetch-{{ log.sec_fetch_site }}">{{ log.sec_fetch_site }}</span>
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if log._labels %}
+                    {% for lbl in log._labels %}
+                      <span class="cp-evtlabel cp-evtlabel-{{ lbl | replace('_', '-') }}">{{ lbl | replace('_', ' ') }}</span>
+                    {% endfor %}
+                  {% else %}—{% endif %}
                 </td>
                 <td>
                   {% if log.reveal_succeeded %}
@@ -263,7 +410,6 @@
                     <span class="cp-badge cp-badge-green">View</span>
                   {% endif %}
                 </td>
-                <td class="cp-mono cp-trunc">{{ log.request_path or '—' }}</td>
                 <td class="cp-trunc">{{ log.referer or '—' }}</td>
               </tr>
               {% endfor %}
@@ -276,20 +422,31 @@
 
     {# ══ SETTINGS ══ #}
     <div id="tab-settings" class="cp-panel">
-      <div class="cp-section-title">Webhook Notifications</div>
-      <p class="cp-hint">Receive a POST request whenever someone accesses or reveals this secret. Supports Discord webhooks and any generic HTTP endpoint.</p>
 
+      <div class="cp-section-title">Link Label / Note</div>
+      <p class="cp-hint">Attach a private note to this link — who you sent it to, what platform, any context. Shown in the header bar. Never visible to the recipient.</p>
+      <div class="cp-settings-form">
+        <div class="cp-settings-row">
+          <label class="cp-settings-label" for="noteInput">Note</label>
+          <input class="cp-settings-input" type="text" id="noteInput"
+            placeholder="e.g. Sent to @scammer123 on Telegram, 2024-06-01"
+            value="{{ note or '' }}" maxlength="500" />
+        </div>
+        <div class="cp-settings-actions">
+          <button class="cp-settings-btn" id="saveNoteBtn">Save Note</button>
+          <button class="cp-settings-btn cp-settings-btn-danger" id="clearNoteBtn">Clear</button>
+        </div>
+        <div id="noteStatus" class="cp-settings-status"></div>
+      </div>
+
+      <div class="cp-section-title cp-section-title-gap">Webhook Notifications</div>
+      <p class="cp-hint">Receive a POST request whenever someone accesses or reveals this secret. Supports Discord webhooks and any generic HTTP endpoint.</p>
       <div class="cp-settings-form">
         <div class="cp-settings-row">
           <label class="cp-settings-label" for="webhookUrlInput">Webhook URL</label>
-          <input
-            class="cp-settings-input"
-            type="url"
-            id="webhookUrlInput"
+          <input class="cp-settings-input" type="url" id="webhookUrlInput"
             placeholder="https://discord.com/api/webhooks/… or https://hooks.example.com/notify"
-            value="{{ secret.webhook_url or '' }}"
-            maxlength="512"
-          />
+            value="{{ secret.webhook_url or '' }}" maxlength="512" />
         </div>
         <div class="cp-settings-actions">
           <button class="cp-settings-btn" id="saveWebhookBtn">Save Webhook</button>
@@ -301,6 +458,17 @@
       <div class="cp-section-title cp-section-title-gap">Test Webhook</div>
       <p class="cp-hint">Send a test ping to confirm your webhook is configured correctly.</p>
       <button class="cp-settings-btn" id="testWebhookBtn">Send Test Ping</button>
+
+      <div class="cp-section-title cp-section-title-gap">Manual Revocation</div>
+      <p class="cp-hint">Permanently destroy this secret right now, regardless of whether it has been revealed. This cannot be undone.</p>
+      {% if burned %}
+        <button class="cp-settings-btn cp-settings-btn-burned" disabled>🔥 Already Burned</button>
+      {% elif expired %}
+        <button class="cp-settings-btn" disabled>Link Expired</button>
+      {% else %}
+        <button class="cp-settings-btn cp-settings-btn-danger" id="burnNowBtn">🔥 Burn Now</button>
+      {% endif %}
+
     </div>
 
   </div>{# /cp-content #}

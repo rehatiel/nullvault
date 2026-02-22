@@ -4,31 +4,31 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
-  <title>{% block title %}NullVault — Secure Secret Sharing{% endblock %}</title>
+  <title>{% block title %}{{ siteName }} — Secure Secret Sharing{% endblock %}</title>
   <link rel="stylesheet" href="/style.css" />
   {% block head %}{% endblock %}
 </head>
 <body>
   <nav>
     <a class="logo" href="/">
-      <div class="logo-icon">🔒</div>
-      NullVault
+      <div class="logo-icon">{{ siteLogo }}</div>
+      {{ siteName }}
     </a>
     <div class="nav-links">
-      <a href="#">How it works</a>
-      <a href="#">Security</a>
-      <a href="#">FAQ</a>
+      <a href="/how-it-works">How it works</a>
+      <a href="/security">Security</a>
+      <a href="/faq">FAQ</a>
     </div>
   </nav>
-  <main>
+  <main{% if mainClass %} class="{{ mainClass }}"{% endif %}>
     <div class="card">
       {% block content %}{% endblock %}
     </div>
   </main>
   <footer>
-    &copy; 2025 NullVault &nbsp;·&nbsp;
-    <a href="#">Privacy Policy</a> &nbsp;·&nbsp;
-    <a href="#">Terms of Service</a> &nbsp;·&nbsp;
+    &copy; {{ currentYear }} {{ siteName }} &nbsp;·&nbsp;
+    <a href="/privacy">Privacy Policy</a> &nbsp;·&nbsp;
+    <a href="/terms">Terms of Service</a> &nbsp;·&nbsp;
     End-to-end encrypted secret sharing
   </footer>
 </body>

@@ -16,11 +16,7 @@ services:
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
       RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-20}
       BASE_URL: ${BASE_URL}
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+
 
 volumes:
   db_data:

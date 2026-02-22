@@ -1,0 +1,50 @@
+{% extends "base.njk" %}
+{% set mainClass = "info-main" %}
+
+{% block title %}Security — {{ siteName }}{% endblock %}
+
+{% block content %}
+<div class="info-page">
+  <div class="info-page-header">
+    <h1>Security</h1>
+    <p>{{ siteName }} is designed from the ground up with a minimal attack surface, strong defaults, and no unnecessary data retention.</p>
+  </div>
+
+  <div class="info-section">
+    <h3>Encryption</h3>
+    <p>Secret content is XOR-obfuscated with the public token as a key before being written to the database. The raw plaintext is never stored at rest. Even with direct database access, the content cannot be read without the corresponding token.</p>
+
+    <h3 style="margin-top:1.5rem">One-time access</h3>
+    <p>Each public link is cryptographically unique and can only be used once when "Burn after reading" is enabled. The moment the secret is revealed, the stored content is deleted and the token is permanently invalidated. There is no way to recover the content after destruction.</p>
+
+    <h3 style="margin-top:1.5rem">Zero third-party requests</h3>
+    <p>{{ siteName }} makes no outbound requests to third parties at runtime. Fonts, scripts, and map assets are all self-hosted. There are no CDN calls, no analytics beacons, and no external tracking of any kind.</p>
+
+    <h3 style="margin-top:1.5rem">Strict Content Security Policy</h3>
+    <p>Every response includes a strict CSP header: <code>script-src 'self'</code>, <code>style-src 'self'</code>, <code>default-src 'none'</code>. This prevents cross-site scripting, data injection, and unauthorized resource loading at the browser level.</p>
+
+    <h3 style="margin-top:1.5rem">Security headers</h3>
+    <p>All responses include a full suite of security headers via Helmet.js: <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>, <code>Strict-Transport-Security</code>, <code>Referrer-Policy: no-referrer</code>, Cross-Origin Embedder Policy, and Cross-Origin Opener Policy. The <code>X-Powered-By</code> header is suppressed.</p>
+
+    <h3 style="margin-top:1.5rem">Rate limiting</h3>
+    <p>Link creation and secret reveal endpoints are rate-limited per IP to prevent abuse and enumeration attacks. Limits are configurable via environment variables.</p>
+
+    <h3 style="margin-top:1.5rem">No user accounts or global admin</h3>
+    <p>There are no user accounts, no login system, and no global admin panel. Access to each secret's control panel is gated solely by possession of the private Control Link — a 256-bit random token. If you lose the Control Link, there is no recovery mechanism and no way to access the panel again.</p>
+
+    <h3 style="margin-top:1.5rem">Self-hosted by design</h3>
+    <p>{{ siteName }} is a self-hosted application. Your secrets are stored on infrastructure you control, not on a shared cloud service. There is no central server with access to your data.</p>
+
+    <h3 style="margin-top:1.5rem">Automatic data deletion</h3>
+    <p>Access logs are automatically purged after a configurable retention window (default: 30 days). Expired secrets and their associated logs are deleted on a scheduled cleanup cycle. No data persists indefinitely.</p>
+
+    <h3 style="margin-top:1.5rem">Geolocation</h3>
+    <p>IP geolocation is performed using a bundled offline database — no IP addresses are sent to external services. Geolocation data is approximate and should not be used for precise attribution.</p>
+  </div>
+
+  <div class="info-highlight">
+    <h3>Responsible disclosure</h3>
+    <p>{{ siteName }} is open-source software. If you discover a security issue, please review the source code and report it responsibly through the project's issue tracker. Do not disclose vulnerabilities publicly before the maintainers have had a reasonable opportunity to respond.</p>
+  </div>
+</div>
+{% endblock %}
