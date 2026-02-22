@@ -268,6 +268,77 @@ The database schema is migrated automatically on startup — no manual steps nee
 
 ---
 
+## ⚠️ Important Disclaimer
+
+This software is provided for **educational and research purposes only**.
+
+By using this project, you agree that:
+
+- You are responsible for complying with all applicable local, state, and international laws  
+- You will not use this software for harassment, doxxing, retaliation, or unauthorized surveillance  
+- You understand that IP-based geolocation is approximate and unreliable  
+- You will not attempt to identify, track, or harm individuals using this software  
+- The authors and contributors assume no liability for misuse  
+
+---
+
+## What This Project **Is**
+
+- A passive honeypot designed to observe scam-related access patterns  
+- A self-hosted tool — no centralized service, no external tracking  
+- A single-purpose application with minimal data collection  
+- An open-source project suitable for demonstrations, learning, and analysis  
+
+---
+
+## What This Project **Is NOT**
+
+- ❌ A hacking tool  
+- ❌ A doxxing or retaliation platform  
+- ❌ A credential harvester  
+- ❌ A tracking or fingerprinting system  
+- ❌ A way to bypass VPNs, proxies, or anonymity tools  
+- ❌ A law enforcement or attribution solution  
+
+---
+
+## Core Features
+
+- Generate shareable links that appear to be a simple secret-sharing page  
+- Each link has a private control panel accessible via a derived URL  
+- No global admin panel or user accounts  
+- Passive logging of basic request metadata  
+- Clean, minimal UI for viewing access logs  
+- Optional link expiration  
+- Ability to delete links and associated logs  
+- Rate limiting to reduce abuse  
+
+---
+
+## Data Collected
+
+This project intentionally limits data collection.
+
+**Logged metadata includes:**
+
+- IP address  
+- Timestamp  
+- User-Agent string  
+- HTTP referrer (if present)  
+- Requested path  
+- Standard HTTP headers  
+- Approximate geolocation (country / region only)  
+
+**The application does not:**
+
+- Execute client-side exploits  
+- Use invasive fingerprinting techniques  
+- Track users across sessions  
+- Attempt to deanonymize visitors  
+- Collect credentials or secrets  
+
+
+
 ## License
 
 MIT
