@@ -27,7 +27,7 @@ Built for scam baiting, OSINT, and catching unauthorized access to sensitive mat
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/rehatiel/nullvault.git
+git clone https://github.com/YOUR_USERNAME/nullvault.git
 cd nullvault
 cp .env.example .env
 ```
