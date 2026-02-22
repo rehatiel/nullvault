@@ -6,7 +6,7 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN apk add --no-cache python3 make g++ \
-    && npm install --omit=dev \
+    && npm install --omit=dev --loglevel=error \
     && apk del python3 make g++
 
 COPY src/ ./src/
