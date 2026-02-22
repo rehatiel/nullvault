@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>NullVault — Control Panel</title>
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="stylesheet" href="/control-panel.css" />
+  <script src="/chart.min.js"></script>
+  <script defer src="/control.js"></script>
+</head>
+<body class="cp-body" data-ua-list="{{ logs | dump | escape }}">
+
+  {# ── Header ── #}
+  <header class="cp-header">
+    <div class="cp-header-left">
+      <a class="cp-logo" href="/">🔒 NullVault</a>
+      <span class="cp-divider">/</span>
+      <span class="cp-title">Control Panel</span>
+    </div>
+    <div class="cp-header-right">
+      {% if burned %}
+        <span class="cp-status cp-status-burned">● Burned</span>
+      {% elif expired %}
+        <span class="cp-status cp-status-expired">● Expired</span>
+      {% else %}
+        <span class="cp-status cp-status-active">● Active</span>
+      {% endif %}
+    </div>
+  </header>
+
+  {# ── Meta bar ── #}
+  <div class="cp-meta-bar">
+    <div class="cp-meta-left">
+      <span class="cp-meta-item">Created <strong>{{ secret.created_at | datetime }}</strong></span>
+      {% if secret.expires_at %}<span class="cp-meta-sep">·</span><span class="cp-meta-item">Expires <strong>{{ secret.expires_at | datetime }}</strong></span>{% endif %}
+      <span class="cp-meta-sep">·</span>
+      <span class="cp-meta-item">Logs kept <strong>{{ retentionDays }}d</strong></span>
+      <span class="cp-meta-sep">·</span>
+      {% if secret.burn_on_reveal %}
+        <span class="cp-meta-item">🔥 <strong>Burns on reveal</strong></span>
+      {% else %}
+        <span class="cp-meta-item">♻️ <strong>Persistent</strong></span>
+      {% endif %}
+    </div>
+    <div class="cp-url-row">
+      <span class="cp-url-text" id="pubUrl">{{ publicUrl }}</span>
+      <button class="cp-copy-btn" id="copyUrlBtn">Copy Link</button>
+    </div>
+  </div>
+
+  {# ── Stat cards ── #}
+  <div class="cp-stats">
+    <div class="cp-stat">
+      <div class="cp-stat-value">{{ stats.totalViews }}</div>
+      <div class="cp-stat-label">Total Views</div>
+    </div>
+    <div class="cp-stat {% if stats.revealAttempts > 0 %}cp-stat-warn{% endif %}">
+      <div class="cp-stat-value">{{ stats.revealAttempts }}</div>
+      <div class="cp-stat-label">Reveal Attempts</div>
+    </div>
+    <div class="cp-stat {% if stats.revealSuccesses > 0 %}cp-stat-danger{% endif %}">
+      <div class="cp-stat-value">{{ stats.revealSuccesses }}</div>
+      <div class="cp-stat-label">Successful Reveals</div>
+    </div>
+    <div class="cp-stat cp-stat-accent">
+      <div class="cp-stat-value">{{ stats.uniqueIPs }}</div>
+      <div class="cp-stat-label">Unique IPs</div>
+    </div>
+  </div>
+
+  {# ── Tab nav ── #}
+  <nav class="cp-tabs">
+    <button class="cp-tab active" id="nav-overview">Overview</button>
+    <button class="cp-tab" id="nav-timeline">Timeline</button>
+    <button class="cp-tab" id="nav-devices">Devices</button>
+    <button class="cp-tab" id="nav-ips">IP Addresses</button>
+    <button class="cp-tab" id="nav-logs">Raw Logs</button>
+    <button class="cp-tab" id="nav-settings">Settings</button>
+  </nav>
+
+  {# ── Tab content ── #}
+  <div class="cp-content">
+
+    {# ══ OVERVIEW ══ #}
+    <div id="tab-overview" class="cp-panel active">
+
+      {% if logs | length == 0 %}
+        <div class="cp-empty">No activity recorded yet. Share your public link to start tracking access.</div>
+      {% else %}
+
+        {# Activity Chart #}
+        <div class="cp-section-title">Activity Over Time</div>
+        <div class="cp-chart-wrap">
+          <canvas id="activityChart" height="120"></canvas>
+        </div>
+
+        {# Event breakdown #}
+        <div class="cp-overview-row">
+          <div class="cp-overview-col">
+            <div class="cp-section-title">Event Breakdown</div>
+            <div class="cp-chart-wrap cp-chart-small">
+              <canvas id="eventChart"></canvas>
+            </div>
+          </div>
+          <div class="cp-overview-col">
+            <div class="cp-section-title">Top Locations</div>
+            <div id="locationList" class="cp-device-list"></div>
+          </div>
+        </div>
+
+        {# World Map #}
+        <div class="cp-section-title cp-section-title-gap">Access Map</div>
+        <div id="worldMap" class="cp-map-wrap"></div>
+
+        {# US state map — shown automatically when US traffic is detected #}
+        <div id="usMapSection" hidden>
+          <div class="cp-section-title cp-section-title-gap">United States — State Breakdown</div>
+          <div id="usMap" class="cp-map-wrap cp-map-wrap--us"></div>
+        </div>
+
+        {# Recent activity #}
+        <div class="cp-section-title cp-section-title-gap">Recent Activity</div>
+        <div class="cp-timeline">
+          {% for log in logs | slice(0, 10) %}
+          <div class="cp-tl-row">
+            <div class="cp-tl-dot {% if log.reveal_succeeded %}cp-dot-reveal{% elif log.reveal_attempted %}cp-dot-attempt{% else %}cp-dot-view{% endif %}"></div>
+            <div class="cp-tl-body">
+              <div class="cp-tl-event">
+                {% if log.reveal_succeeded %}Secret Revealed
+                {% elif log.reveal_attempted %}Reveal Attempted (failed)
+                {% else %}Page Viewed
+                {% endif %}
+              </div>
+              <div class="cp-tl-meta">
+                <span>{{ log.ip_address or 'Unknown IP' }}</span>
+                {% if log.location %}<span>{{ log.location }}</span>{% endif %}
+                {% if log.org %}<span>{{ log.org }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="cp-tl-time">{{ log.accessed_at | datetime }}</div>
+          </div>
+          {% endfor %}
+        </div>
+
+      {% endif %}
+    </div>
+
+    {# ══ TIMELINE ══ #}
+    <div id="tab-timeline" class="cp-panel">
+      <div class="cp-section-title">Full Access Timeline</div>
+      {% if logs | length == 0 %}
+        <div class="cp-empty">No activity recorded yet.</div>
+      {% else %}
+        <div class="cp-timeline">
+          {% for log in logs %}
+          <div class="cp-tl-row">
+            <div class="cp-tl-dot {% if log.reveal_succeeded %}cp-dot-reveal{% elif log.reveal_attempted %}cp-dot-attempt{% else %}cp-dot-view{% endif %}"></div>
+            <div class="cp-tl-body">
+              <div class="cp-tl-event">
+                {% if log.reveal_succeeded %}Secret Revealed
+                {% elif log.reveal_attempted %}Reveal Attempted (failed)
+                {% else %}Page Viewed
+                {% endif %}
+              </div>
+              <div class="cp-tl-meta">
+                <span>{{ log.ip_address or 'Unknown IP' }}</span>
+                {% if log.location %}<span>{{ log.location }}</span>{% endif %}
+                {% if log.org %}<span>{{ log.org }}</span>{% endif %}
+                {% if log.referer %}<span>ref: {{ log.referer | truncate(50) }}</span>{% endif %}
+              </div>
+            </div>
+            <div class="cp-tl-time">{{ log.accessed_at | datetime }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    {# ══ DEVICES ══ #}
+    <div id="tab-devices" class="cp-panel">
+      <div class="cp-section-title">Device Breakdown</div>
+      <p class="cp-hint">Parsed from {{ stats.totalViews }} User-Agent string(s).</p>
+      <div class="cp-device-grid">
+        <div class="cp-device-col">
+          <div class="cp-device-heading">Browsers</div>
+          <div id="browserList" class="cp-device-list"></div>
+        </div>
+        <div class="cp-device-col">
+          <div class="cp-device-heading">Platforms</div>
+          <div id="platformList" class="cp-device-list"></div>
+        </div>
+      </div>
+
+      {% if logs | length > 0 %}
+      <div class="cp-section-title cp-section-title-gap">Raw User-Agent Strings</div>
+      <div class="cp-ua-list">
+        {% for log in logs %}
+          {% if log.user_agent %}
+            <div class="cp-ua-row">{{ log.user_agent }}</div>
+          {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    {# ══ IPS ══ #}
+    <div id="tab-ips" class="cp-panel">
+      <div class="cp-section-title">Unique IP Addresses</div>
+      {% if uniqueIPLogs | length == 0 %}
+        <div class="cp-empty">No IP data available.</div>
+      {% else %}
+        <div class="cp-ip-grid">
+          {% for log in uniqueIPLogs %}
+          <div class="cp-ip-card">
+            <div class="cp-ip-addr">{{ log.ip_address }}</div>
+            <div class="cp-ip-details">
+              {% if log.location %}<div class="cp-ip-row"><span class="cp-ip-label">Location</span><span>{{ log.location }}</span></div>{% endif %}
+              {% if log.org %}<div class="cp-ip-row"><span class="cp-ip-label">Org</span><span>{{ log.org }}</span></div>{% endif %}
+              <div class="cp-ip-row"><span class="cp-ip-label">First Seen</span><span>{{ log.accessed_at | datetime }}</span></div>
+            </div>
+            <a class="cp-ip-link" href="https://www.abuseipdb.com/check/{{ log.ip_address }}" target="_blank" rel="noopener noreferrer">AbuseIPDB ↗</a>
+          </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    {# ══ LOGS ══ #}
+    <div id="tab-logs" class="cp-panel">
+      <div class="cp-section-title">Raw Access Logs</div>
+      <div class="cp-table-wrap">
+        <table class="cp-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>IP</th>
+              <th>Location</th>
+              <th>Event</th>
+              <th>Path</th>
+              <th>Referer</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if logs | length == 0 %}
+              <tr><td colspan="6" class="cp-empty">No logs yet.</td></tr>
+            {% else %}
+              {% for log in logs %}
+              <tr>
+                <td class="cp-mono cp-nowrap">{{ log.accessed_at | datetime }}</td>
+                <td class="cp-mono">{{ log.ip_address or '—' }}</td>
+                <td>
+                  <div>{{ log.location or '—' }}</div>
+                  {% if log.org %}<div class="cp-sub">{{ log.org }}</div>{% endif %}
+                </td>
+                <td>
+                  {% if log.reveal_succeeded %}
+                    <span class="cp-badge cp-badge-red">Revealed</span>
+                  {% elif log.reveal_attempted %}
+                    <span class="cp-badge cp-badge-yellow">Attempted</span>
+                  {% else %}
+                    <span class="cp-badge cp-badge-green">View</span>
+                  {% endif %}
+                </td>
+                <td class="cp-mono cp-trunc">{{ log.request_path or '—' }}</td>
+                <td class="cp-trunc">{{ log.referer or '—' }}</td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+
+    {# ══ SETTINGS ══ #}
+    <div id="tab-settings" class="cp-panel">
+      <div class="cp-section-title">Webhook Notifications</div>
+      <p class="cp-hint">Receive a POST request whenever someone accesses or reveals this secret. Supports Discord webhooks and any generic HTTP endpoint.</p>
+
+      <div class="cp-settings-form">
+        <div class="cp-settings-row">
+          <label class="cp-settings-label" for="webhookUrlInput">Webhook URL</label>
+          <input
+            class="cp-settings-input"
+            type="url"
+            id="webhookUrlInput"
+            placeholder="https://discord.com/api/webhooks/… or https://hooks.example.com/notify"
+            value="{{ secret.webhook_url or '' }}"
+            maxlength="512"
+          />
+        </div>
+        <div class="cp-settings-actions">
+          <button class="cp-settings-btn" id="saveWebhookBtn">Save Webhook</button>
+          <button class="cp-settings-btn cp-settings-btn-danger" id="clearWebhookBtn">Clear</button>
+        </div>
+        <div id="webhookStatus" class="cp-settings-status"></div>
+      </div>
+
+      <div class="cp-section-title cp-section-title-gap">Test Webhook</div>
+      <p class="cp-hint">Send a test ping to confirm your webhook is configured correctly.</p>
+      <button class="cp-settings-btn" id="testWebhookBtn">Send Test Ping</button>
+    </div>
+
+  </div>{# /cp-content #}
+
+</body>
+</html>

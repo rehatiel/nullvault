@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>{% block title %}NullVault — Secure Secret Sharing{% endblock %}</title>
+  <link rel="stylesheet" href="/style.css" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <nav>
+    <a class="logo" href="/">
+      <div class="logo-icon">🔒</div>
+      NullVault
+    </a>
+    <div class="nav-links">
+      <a href="#">How it works</a>
+      <a href="#">Security</a>
+      <a href="#">FAQ</a>
+    </div>
+  </nav>
+  <main>
+    <div class="card">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+  <footer>
+    &copy; 2025 NullVault &nbsp;·&nbsp;
+    <a href="#">Privacy Policy</a> &nbsp;·&nbsp;
+    <a href="#">Terms of Service</a> &nbsp;·&nbsp;
+    End-to-end encrypted secret sharing
+  </footer>
+</body>
+</html>

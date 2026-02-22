@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - db_data:/app/data
+    environment:
+      NODE_ENV: production
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+      CREATION_SECRET: ${CREATION_SECRET}
+      DB_PATH: /app/data/honeypot.db
+      DEFAULT_EXPIRY_DAYS: ${DEFAULT_EXPIRY_DAYS:-30}
+      RETENTION_DAYS: ${RETENTION_DAYS:-30}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-20}
+      BASE_URL: ${BASE_URL}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  db_data:

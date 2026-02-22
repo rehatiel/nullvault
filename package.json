@@ -1,0 +1,18 @@
+{
+  "name": "nullvault",
+  "version": "2.0.0",
+  "description": "Self-hosted passive honeypot link tracker for scam baiting and security research.",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "node --watch src/app.js"
+  },
+  "dependencies": {
+    "better-sqlite3":    "^9.4.3",
+    "express":           "^4.19.2",
+    "express-rate-limit":"^7.2.0",
+    "geoip-lite":        "^1.4.10",
+    "helmet":            "^7.1.0",
+    "nunjucks":          "^3.2.4"
+  }
+}
