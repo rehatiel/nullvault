@@ -4,6 +4,9 @@ A self-hosted honeypot link tracker. Create a secret-looking URL, share it with 
 
 Built for scam baiting, OSINT, and catching unauthorized access to sensitive material.
 
+> **Built entirely with [Claude](https://claude.ai) (Anthropic).** Every line of code, config, and documentation in this project was written through an iterative AI-assisted development session — no manual coding. The architecture decisions, feature design, and implementation were all driven through conversation with Claude Sonnet.
+
+
 ---
 
 ## Features
@@ -24,7 +27,7 @@ Built for scam baiting, OSINT, and catching unauthorized access to sensitive mat
 ### 1. Clone and configure
 
 ```bash
-git clone https://github.com/rehatiel/nullvault.git
+git clone https://github.com/YOUR_USERNAME/nullvault.git
 cd nullvault
 cp .env.example .env
 ```
