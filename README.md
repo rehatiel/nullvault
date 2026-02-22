@@ -337,24 +337,8 @@ This project intentionally limits data collection.
 - Attempt to deanonymize visitors  
 - Collect credentials or secrets  
 
-
+---
 
 ## License
 
 MIT
-
-## 🔧 Vibe-Coded Disclosure
-
-nullVault was developed using an AI-assisted, prompt-driven workflow (often referred to as *“vibe coding”*).
-
-The architecture, feature set, and implementation were produced through iterative natural-language design and refinement, rather than traditional line-by-line manual coding. All logic was reviewed, tested, and adjusted through hands-on validation by a human operator.
-
-Important notes:
-
-- This project prioritizes **clarity, safety, and transparency** over micro-optimizations
-- Code may favor readability and explicit logic over clever or condensed patterns
-- Contributors should expect consistent but AI-influenced structure and style
-- All contributions are welcome, regardless of whether they are human- or AI-assisted
-
-AI assistance does not remove responsibility from the operator or contributors.  
-You are encouraged to review, audit, and understand the code before deployment.

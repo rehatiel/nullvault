@@ -1,6 +1,7 @@
 function buildPayload(url, data) {
   const isDiscord = url.includes('discord.com/api/webhooks') ||
                     url.includes('discordapp.com/api/webhooks');
+  const siteName  = process.env.SITE_NAME || 'NullVault';
 
   if (isDiscord) {
     let title, color;
@@ -18,7 +19,7 @@ function buildPayload(url, data) {
       color = 0xf59e0b;
     }
     return {
-      username: 'NullVault',
+      username: siteName,
       embeds: [{
         title,
         color,
@@ -29,7 +30,7 @@ function buildPayload(url, data) {
           { name: '💻 Agent',    value: (data.userAgent|| '—').slice(0, 100), inline: false },
           { name: '↩️ Referer',  value: (data.referer  || '—').slice(0, 100), inline: false },
         ],
-        footer:    { text: 'NullVault Honeypot' },
+        footer:    { text: siteName },
         timestamp: new Date().toISOString(),
       }],
     };

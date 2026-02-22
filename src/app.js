@@ -84,7 +84,7 @@ app.use((err, _req, res, _next) => {
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`NullVault listening on port ${PORT}`);
+  console.log(`${SITE_NAME} listening on port ${PORT}`);
   startCleanupScheduler();
 });
 

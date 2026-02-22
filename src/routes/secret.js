@@ -130,6 +130,9 @@ router.get('/:token/control', (req, res) => {
       correlationHints,
       narrativeSummary,
       labelMeta:    LABEL_META,
+      // Branding — control.njk is standalone so we pass these explicitly
+      siteName:     process.env.SITE_NAME || 'NullVault',
+      siteLogo:     process.env.SITE_LOGO || '🔒',
     });
   } catch (err) {
     console.error('[Control] Error:', err);
@@ -226,7 +229,7 @@ router.post('/:token/webhook/test', async (req, res) => {
       publicUrl: `${baseUrl}/s/${secret.public_token}`,
       ip:        '0.0.0.0',
       location:  'Test Ping',
-      userAgent: 'NullVault/test',
+      userAgent: `${process.env.SITE_NAME || 'NullVault'}/test`,
       referer:   null,
       test:      true,
     });
