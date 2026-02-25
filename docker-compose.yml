@@ -19,5 +19,6 @@ services:
       SITE_NAME: ${SITE_NAME}
       SITE_LOGO: ${SITE_LOGO}
 
+
 volumes:
   db_data:

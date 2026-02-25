@@ -517,6 +517,19 @@
       <p class="cp-hint">Send a test ping to confirm your webhook is configured correctly.</p>
       <button class="cp-settings-btn" id="testWebhookBtn">Send Test Ping</button>
 
+      <div class="cp-section-title cp-section-title-gap">Location Requirement</div>
+      <p class="cp-hint">When enabled, visitors must grant location access before the secret can be revealed. Those who deny or cannot provide location (e.g. desktop browsers without GPS or WiFi positioning) will see a message instructing them to use a mobile device. Their page visit is still logged.</p>
+      <div class="cp-settings-form">
+        <div class="cp-settings-toggle-row">
+          <span class="cp-settings-label">Require location to reveal</span>
+          <label class="cp-toggle" title="Require location to reveal">
+            <input type="checkbox" id="requireLocationToggle" {% if requireLocation %}checked{% endif %} />
+            <span class="cp-toggle-track"><span class="cp-toggle-thumb"></span></span>
+          </label>
+        </div>
+        <div id="requireLocationStatus" class="cp-settings-status"></div>
+      </div>
+
       <div class="cp-section-title cp-section-title-gap">Manual Revocation</div>
       <p class="cp-hint">Permanently destroy this secret right now, regardless of whether it has been revealed. This cannot be undone.</p>
       {% if burned %}

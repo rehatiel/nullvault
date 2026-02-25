@@ -1052,3 +1052,54 @@ body.cp-body {
   0%   { opacity: 1; transform: scale(1.3); }
   100% { opacity: 1; transform: scale(1); }
 }
+
+/* ── Settings toggle switch ────────────────────────────────────────── */
+.cp-settings-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+}
+
+.cp-toggle {
+  position: relative;
+  display: inline-block;
+  width: 2.75rem;
+  height: 1.5rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cp-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.cp-toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--border, #333);
+  transition: background 0.2s;
+}
+
+.cp-toggle input:checked + .cp-toggle-track {
+  background: var(--accent, #e06c35);
+}
+
+.cp-toggle-thumb {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.cp-toggle input:checked + .cp-toggle-track .cp-toggle-thumb {
+  transform: translateX(1.25rem);
+}

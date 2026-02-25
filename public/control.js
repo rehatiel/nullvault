@@ -519,6 +519,38 @@ function initSettings() {
     }
   });
 
+  // ── Require location toggle ─────────────────────────────────────────────
+  const requireLocationToggle = document.getElementById('requireLocationToggle');
+  const requireLocationStatus = document.getElementById('requireLocationStatus');
+
+  function setRequireLocationStatus(msg, ok) {
+    if (!requireLocationStatus) return;
+    requireLocationStatus.textContent = msg;
+    requireLocationStatus.className = 'cp-settings-status ' + (ok ? 'cp-settings-status-ok' : 'cp-settings-status-err');
+    setTimeout(() => { requireLocationStatus.textContent = ''; requireLocationStatus.className = 'cp-settings-status'; }, 3500);
+  }
+
+  if (requireLocationToggle) {
+    requireLocationToggle.addEventListener('change', async () => {
+      const enabled = requireLocationToggle.checked;
+      const token   = getPublicToken();
+      try {
+        const res  = await fetch(`/s/${token}/require-location`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ enabled }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Save failed');
+        setRequireLocationStatus(enabled ? 'Location requirement enabled.' : 'Location requirement disabled.', true);
+      } catch (e) {
+        setRequireLocationStatus(e.message, false);
+        // Revert toggle on failure
+        requireLocationToggle.checked = !enabled;
+      }
+    });
+  }
+
   // ── Note / label ─────────────────────────────────────────────────────────
   const saveNoteBtn  = document.getElementById('saveNoteBtn');
   const clearNoteBtn = document.getElementById('clearNoteBtn');

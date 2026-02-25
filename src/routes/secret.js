@@ -16,12 +16,12 @@ const {
 const router = express.Router();
 
 const getSecret = db.prepare(`
-  SELECT id, content, burned, expires_at, public_token, template, webhook_url, burn_on_reveal
+  SELECT id, content, burned, expires_at, public_token, template, webhook_url, burn_on_reveal, require_location
   FROM secrets WHERE public_token = ?
 `);
 
 const getSecretForControl = db.prepare(`
-  SELECT id, public_token, burned, burned_at, expires_at, created_at, burn_on_reveal, webhook_url, note
+  SELECT id, public_token, burned, burned_at, expires_at, created_at, burn_on_reveal, require_location, webhook_url, note
   FROM secrets WHERE public_token = ?
 `);
 
@@ -39,6 +39,10 @@ const updateWebhook = db.prepare(`
 
 const updateNote = db.prepare(`
   UPDATE secrets SET note = @note WHERE public_token = @token
+`);
+
+const updateRequireLocation = db.prepare(`
+  UPDATE secrets SET require_location = @requireLocation WHERE public_token = @token
 `);
 
 const insertBeacon = db.prepare(`
@@ -138,6 +142,7 @@ router.get('/:token/control', (req, res) => {
       expired,
       retentionDays,
       note:         secret.note || null,
+      requireLocation: !!secret.require_location,
       // Analysis data
       correlationHints,
       narrativeSummary,
@@ -228,6 +233,21 @@ router.post('/:token/note', (req, res) => {
   } catch (err) {
     console.error('[Note] Error:', err);
     return res.status(500).json({ error: 'Failed to update note.' });
+  }
+});
+
+// ── POST /s/:token/require-location ─────────────────────────────────────────
+router.post('/:token/require-location', (req, res) => {
+  try {
+    const secret = getSecretForControl.get(req.params.token);
+    if (!secret) return res.status(404).json({ error: 'Not found.' });
+
+    const enabled = req.body?.enabled === true ? 1 : 0;
+    updateRequireLocation.run({ requireLocation: enabled, token: req.params.token });
+    return res.json({ ok: true, requireLocation: !!enabled });
+  } catch (err) {
+    console.error('[RequireLocation] Error:', err);
+    return res.status(500).json({ error: 'Failed to update setting.' });
   }
 });
 
@@ -363,7 +383,18 @@ router.post('/:token/reveal', publicLimiter, (req, res) => {
   const gpsCoords = (typeof rawLat === 'number' && typeof rawLng === 'number')
     ? { lat: rawLat, lng: rawLng } : null;
 
-  const { ip, geo } = logAccess(req, secret.id, true, succeeded, gpsCoords);
+  // Enforce location requirement — log the attempt regardless
+  const { ip, geo } = logAccess(req, secret.id, true, succeeded && (!secret.require_location || !!gpsCoords), gpsCoords);
+
+  if (secret.require_location && !gpsCoords && available) {
+    return res.render('secret.njk', {
+      state:    'location_required',
+      template: secret.template,
+      token:    secret.public_token,
+      content:  null,
+      expiresAt: secret.expires_at || null,
+    });
+  }
   const baseUrl   = process.env.BASE_URL || '';
 
   if (secret.webhook_url) {

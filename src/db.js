@@ -19,8 +19,9 @@ db.exec(`
     burned        INTEGER NOT NULL DEFAULT 0,
     burned_at     INTEGER,
     expires_at    INTEGER,
-    burn_on_reveal INTEGER NOT NULL DEFAULT 0,
-    created_at    INTEGER NOT NULL DEFAULT (unixepoch())
+    burn_on_reveal   INTEGER NOT NULL DEFAULT 0,
+    require_location INTEGER NOT NULL DEFAULT 0,
+    created_at       INTEGER NOT NULL DEFAULT (unixepoch())
   );
 
   CREATE TABLE IF NOT EXISTS access_logs (
@@ -64,7 +65,8 @@ db.exec(`
 const sCols = db.prepare('PRAGMA table_info(secrets)').all().map(c => c.name);
 if (!sCols.includes('template'))       db.exec(`ALTER TABLE secrets ADD COLUMN template TEXT NOT NULL DEFAULT 'default'`);
 if (!sCols.includes('webhook_url'))    db.exec(`ALTER TABLE secrets ADD COLUMN webhook_url TEXT`);
-if (!sCols.includes('burn_on_reveal')) db.exec(`ALTER TABLE secrets ADD COLUMN burn_on_reveal INTEGER NOT NULL DEFAULT 0`);
+if (!sCols.includes('burn_on_reveal'))    db.exec(`ALTER TABLE secrets ADD COLUMN burn_on_reveal INTEGER NOT NULL DEFAULT 0`);
+if (!sCols.includes('require_location')) db.exec(`ALTER TABLE secrets ADD COLUMN require_location INTEGER NOT NULL DEFAULT 0`);
 if (!sCols.includes('note'))           db.exec(`ALTER TABLE secrets ADD COLUMN note TEXT`);
 
 const lCols = db.prepare('PRAGMA table_info(access_logs)').all().map(c => c.name);
