@@ -1015,3 +1015,40 @@ body.cp-body {
   transition: opacity 0.15s;
 }
 .cp-toast-close:hover { opacity: 1; }
+
+.cp-gps-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+.cp-gps-link:hover { text-decoration: underline; }
+
+
+/* ── Device column in raw logs ─────────────────────────────────────── */
+.cp-ua-device {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ── Beacon live indicator ─────────────────────────────────────────── */
+.cp-beacon-live {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--success, #4ade80);
+  margin-left: 0.5rem;
+  transition: opacity 0.3s;
+}
+.cp-beacon-live--ping {
+  animation: beaconPing 0.6s ease-out;
+}
+@keyframes beaconPing {
+  0%   { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 1; transform: scale(1); }
+}

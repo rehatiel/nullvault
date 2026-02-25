@@ -1,5 +1,5 @@
 // ── Tab navigation ──────────────────────────────────────────────────────────
-const tabs = ['overview','timeline','devices','ips','analysis','logs','settings'];
+const tabs = ['overview','timeline','devices','ips','analysis','logs','track','settings'];
 
 tabs.forEach(name => {
   const btn = document.getElementById('nav-' + name);
@@ -16,6 +16,7 @@ function showTab(name) {
   if (name === 'devices')  buildDeviceCharts();
   if (name === 'overview') buildOverview();
   if (name === 'settings') initSettings();
+  if (name === 'track')    initTrackTab();
 }
 
 // ── IP masking ───────────────────────────────────────────────────────────────
@@ -1015,3 +1016,79 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!isNaN(ts)) el.textContent = timeAgo(ts);
   });
 });
+
+// ── Location Track tab ────────────────────────────────────────────────────────
+
+let beaconLastTs    = 0;
+let beaconPollTimer = null;
+let trackInitialised = false;
+
+function initTrackTab() {
+  if (trackInitialised) return;
+  trackInitialised = true;
+
+  // Seed lastTs from server-rendered rows
+  document.querySelectorAll('#beaconTbody tr[data-ts]').forEach(row => {
+    const ts = parseInt(row.dataset.ts, 10);
+    if (ts > beaconLastTs) beaconLastTs = ts;
+  });
+
+  // Start live polling
+  beaconPollTimer = setInterval(pollBeacons, 5000);
+
+  // Apply IP masking to beacon table
+  applyIPMask();
+}
+
+function fmtDatetime(ts) {
+  return new Date(ts * 1000).toISOString().slice(0, 19).replace('T', ' ');
+}
+
+async function pollBeacons() {
+  const token = getPublicToken();
+  if (!token) return;
+
+  try {
+    const res  = await fetch(`/s/${token}/beacon/poll?since=${beaconLastTs}`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    if (!data.newBeacons || !data.newBeacons.length) return;
+
+    const tbody   = document.getElementById('beaconTbody');
+    const emptyRow = document.getElementById('beaconEmptyRow');
+    if (emptyRow) emptyRow.remove();
+
+    // Prepend newest rows (API returns ASC, so reverse for display)
+    const rows = [...data.newBeacons].reverse().map(b => {
+      const acc = b.accuracy ? `±${Math.round(b.accuracy)}m` : '—';
+      const ip  = b.ip_address || '—';
+      return `<tr data-ts="${b.beaconed_at}" class="cp-tl-row-new">
+        <td class="cp-mono cp-nowrap">${fmtDatetime(b.beaconed_at)}</td>
+        <td class="cp-mono">${b.gps_lat.toFixed(6)}, ${b.gps_lng.toFixed(6)}</td>
+        <td class="cp-mono">${acc}</td>
+        <td class="cp-mono"><span class="cp-ip-val" data-ip="${ip}">${ip}</span></td>
+        <td><a class="cp-gps-link" href="https://maps.google.com/?q=${b.gps_lat},${b.gps_lng}" target="_blank" rel="noopener noreferrer">📍 Open</a></td>
+      </tr>`;
+    }).join('');
+
+    tbody.insertAdjacentHTML('afterbegin', rows);
+    setTimeout(() => tbody.querySelectorAll('.cp-tl-row-new').forEach(r => r.classList.remove('cp-tl-row-new')), 2000);
+
+    // Update lastTs
+    beaconLastTs = Math.max(...data.newBeacons.map(b => b.beaconed_at));
+
+    // Show live indicator
+    const indicator = document.getElementById('beaconLiveIndicator');
+    if (indicator) {
+      indicator.classList.add('cp-beacon-live--ping');
+      setTimeout(() => indicator.classList.remove('cp-beacon-live--ping'), 1000);
+    }
+
+    // Apply IP masking
+    applyIPMask();
+
+  } catch (_) {
+    // Silent fail
+  }
+}

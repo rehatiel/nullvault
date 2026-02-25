@@ -29,7 +29,16 @@ app.use(helmet({
   crossOriginOpenerPolicy:   { policy: 'same-origin' },
   crossOriginResourcePolicy: { policy: 'same-origin' },
   referrerPolicy:            { policy: 'no-referrer' },
+  // Explicitly allow geolocation so the reveal page can prompt the visitor.
+  // Helmet 7 blocks it by default via Permissions-Policy.
+  permittedCrossDomainPolicies: false,
 }));
+
+// Allow geolocation — must be set after helmet since helmet sets Permissions-Policy
+app.use((_req, res, next) => {
+  res.setHeader('Permissions-Policy', 'geolocation=(self)');
+  next();
+});
 app.disable('x-powered-by');
 
 const env = nunjucks.configure(path.join(__dirname, '..', 'views'), {
@@ -41,6 +50,29 @@ const env = nunjucks.configure(path.join(__dirname, '..', 'views'), {
 env.addFilter('date',     ts  => new Date(ts * 1000).toISOString().slice(0, 10));
 env.addFilter('datetime', ts  => new Date(ts * 1000).toISOString().slice(0, 19).replace('T', ' '));
 env.addFilter('truncate', (str, len) => str && str.length > len ? str.slice(0, len) + '…' : (str || ''));
+env.addFilter('round',    (num, decimals) => typeof num === 'number' ? Number(num.toFixed(decimals ?? 0)) : num);
+env.addFilter('parseua',  (ua) => {
+  if (!ua) return { browser: '—', platform: '—' };
+  const browsers = [
+    { name: 'Edge',    re: /Edg\// },
+    { name: 'Samsung', re: /SamsungBrowser\// },
+    { name: 'Opera',   re: /OPR\// },
+    { name: 'Chrome',  re: /Chrome\/[\d.]+ (?!.*Edg|.*OPR|.*SamsungBrowser)/ },
+    { name: 'Firefox', re: /Firefox\// },
+    { name: 'Safari',  re: /Safari\// },
+  ];
+  const platforms = [
+    { name: 'iOS',     re: /iPhone|iPad/ },
+    { name: 'Android', re: /Android/ },
+    { name: 'Windows', re: /Windows/ },
+    { name: 'macOS',   re: /Mac OS X/ },
+    { name: 'Linux',   re: /Linux/ },
+  ];
+  return {
+    browser:  (browsers.find(b => b.re.test(ua))  || { name: 'Other' }).name,
+    platform: (platforms.find(p => p.re.test(ua)) || { name: 'Unknown' }).name,
+  };
+});
 
 // Site branding — configurable via .env
 const SITE_NAME  = process.env.SITE_NAME  || 'NullVault';

@@ -18,16 +18,21 @@ const stmt = db.prepare(`
   INSERT INTO access_logs
     (secret_id, ip_address, location, org, timezone,
      user_agent, accept_language, sec_ch_ua, sec_fetch_site,
-     referer, request_path, reveal_attempted, reveal_succeeded)
+     referer, request_path, reveal_attempted, reveal_succeeded,
+     gps_lat, gps_lng)
   VALUES
     (@secretId, @ip, @location, @org, @timezone,
      @ua, @acceptLanguage, @secChUa, @secFetchSite,
-     @referer, @path, @attempted, @succeeded)
+     @referer, @path, @attempted, @succeeded,
+     @gpsLat, @gpsLng)
 `);
 
-function logAccess(req, secretId, revealAttempted = false, revealSucceeded = false) {
+function logAccess(req, secretId, revealAttempted = false, revealSucceeded = false, gpsCoords = null) {
   const ip  = extractIP(req);
   const geo = lookupIP(ip);
+
+  const gpsLat = gpsCoords && typeof gpsCoords.lat === 'number' ? gpsCoords.lat : null;
+  const gpsLng = gpsCoords && typeof gpsCoords.lng === 'number' ? gpsCoords.lng : null;
 
   stmt.run({
     secretId,
@@ -37,14 +42,14 @@ function logAccess(req, secretId, revealAttempted = false, revealSucceeded = fal
     timezone:      geo ? geo.timezone : null,
     ua:            (req.headers['user-agent']    || '').slice(0, MAX_UA_LEN),
     acceptLanguage:(req.headers['accept-language']|| '').slice(0, MAX_LANG_LEN) || null,
-    // Sec-CH-UA: "Google Chrome";v="125", "Chromium";v="125", "Not.A/Brand";v="24"
     secChUa:       (req.headers['sec-ch-ua']     || '').slice(0, MAX_CH_LEN)   || null,
-    // Sec-Fetch-Site: none | same-origin | same-site | cross-site
     secFetchSite:  (req.headers['sec-fetch-site']|| '').slice(0, MAX_FETCH_LEN)|| null,
     referer:       (req.headers['referer'] || req.headers['referrer'] || '').slice(0, MAX_REF_LEN) || null,
     path:          (req.path || '').slice(0, 512),
     attempted:     revealAttempted ? 1 : 0,
     succeeded:     revealSucceeded ? 1 : 0,
+    gpsLat,
+    gpsLng,
   });
   return { ip, geo };
 }
